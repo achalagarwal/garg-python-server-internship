@@ -1,0 +1,81 @@
+<html>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+
+<head>
+    <title>Image Upload</title>
+</head>
+<style>
+    .container {
+        padding: 30px 0;
+    }
+
+    .center {
+        text-align: center;
+    }
+</style>
+
+
+<body class="center">
+    <div>
+        <h3>
+            Image Upload
+        </h3>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <form method="post" action="/image" enctype="multipart/form-data">
+                    <div>
+                        <label for="file">Choose file to upload</label>
+                        <input type="file" id="file" accept="image/*" name="file" multiple>
+                    </div>
+                    <div>
+                        <button>Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const token = urlParams.get('token')
+
+        // Hint: Use this auth token for successfully submitting the form
+        // The /image endpoint requires an auth token in the headers
+
+
+        $(function () {
+            $(document).on("change", ":file", function () {
+                var input = $(this),
+                    numFiles = input.get(0).files ? input.get(0).files.length : 1,
+                    label = input
+                        .val()
+                        .replace(/\\/g, "/")
+                        .replace(/.*\//, "");
+                input.trigger("fileselect", [numFiles, label]);
+            });
+
+            $(document).ready(function () {
+                $(":file").on("fileselect", function (event, numFiles, label) {
+                    var input = $(this)
+                        .parents(".input-group")
+                        .find(":text"),
+                        log = numFiles > 1 ? numFiles + " files selected" : label;
+
+                    if (input.length) {
+                        input.val(log);
+                    } else {
+                        if (log) alert(log);
+                    }
+                });
+            });
+        });
+
+
+    </script>
+</body>
+
+</html>
