@@ -13,6 +13,11 @@ Before we begin, let's familiarize ourselves with the technologies that we will 
 
 Additionally, we are using `FastAPI_Users` for our User management. On top, it would be nice to have familiarity with `AsyncIO in Python`, `REST APIs`, and `HTML Forms`.
 
+3. [SQLAlchemy](https://nextjs.org/) - XYZ for PostgreSQL
+
+Additionally, we are using `FastAPI_Users` for our User management. On top, it would be nice to have familiarity with `AsyncIO in Python`, `REST APIs`, and `HTML Forms`.
+
+
 ---
 
 <h2 id="my-anchor"> Setting up </h2>
@@ -21,12 +26,14 @@ Follow the following steps
 
 1. Clone this repo on your local machine. Read the [how to](https://www.atlassian.com/git/tutorials/setting-up-a-repository/git-clone) if you aren't sure.
 2. Make sure `poetry` is installed. You can find the installation guide at [Poetry's webpage](https://python-poetry.org/docs/). You can use [`pip` to install poetry](https://python-poetry.org/docs/#installing-with-pip) too.
-3. Execute the following command in the directory
+3. Install `postgresql` CLI.
+4. Execute the following command in the directory
    ```bash 
    # make sure to `cd <project-directory>` before running the command
    poetry install
+   psql -f init.sql
    ```
-4. Finally, start the app 
+5. Finally, start the app
    ```bash 
    # in the same project-directory
    uvicorn app.main:app  --workers 1 --reload
@@ -64,8 +71,7 @@ Q. What are the parameters of scoring for the test? <br/>
 A. The parameters are clean code, optimal usage of libraries, and completion of subtasks.
 
 Q. How will the subtasks be checked? <br/>
-A. We will clone/download your code and follow the <a id="my-anchor">setting-up steps</a> to run the server
-
+A. We will clone/download your code and follow the `setting-up` steps to run the server.
 
 Q. Can I make additions outside the subtasks? <br/>
 A. Of course, any improvement in the code will be considered in your favour.
@@ -78,5 +84,3 @@ A. You will learn about state-of-the-art technologies like FastAPI; Libraries li
 
 Q. I have spent a lot of time on these challenges but have not made much progress? What should I do? <br/>
 A. First, don't feel disheartened, our challenges are in no way a perfect measure of your skills. If you are not satisfied with your solution, we would appreciate a write-up on how you attempted to solve the challenge, the steps you undertook, along with whatever code you have to provide.
-
-

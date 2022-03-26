@@ -64,7 +64,6 @@ async def login():
     
     raise NotImplementedError("Please remove this statement after implementing this function")
 
-
 @api_router.post("/signup")
 async def signup(
     email: Any = Form(...),

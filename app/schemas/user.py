@@ -16,7 +16,6 @@ class User(models.BaseUser):
     is_superuser: bool = False
     is_verified: bool = False
 
-
 class UserCreate(models.BaseUserCreate):
     email: EmailStr
     password: str
@@ -24,14 +23,12 @@ class UserCreate(models.BaseUserCreate):
     is_superuser: Optional[bool] = False
     is_verified: Optional[bool] = False
 
-
 class UserUpdate(models.BaseUserUpdate):
     password: Optional[str]
     email: Optional[EmailStr]
     is_active: Optional[bool]
     is_superuser: Optional[bool]
     is_verified: Optional[bool]
-
 
 class UserDB(User, models.BaseUserDB):
     id: UUID4 = Field(default_factory=uuid.uuid4)
