@@ -19,6 +19,7 @@ from app.session import async_session
 
 
 async def main() -> None:
+    
     print("Start initial data")
     async with async_session() as session:
         result = await session.execute(
