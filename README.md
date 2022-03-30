@@ -9,13 +9,10 @@ Before we begin, let's familiarize ourselves with the technologies that we will 
 
 1. [FastAPI](https://developers.google.com/amp) - State-of-the-art component library for building performant web pages
 
-2. [SQLAlchemy](https://nextjs.org/) - XYZ for PostgreSQL
+2. [SQLAlchemy](https://nextjs.org/) - ORM for PostgreSQL
 
 Additionally, we are using `FastAPI_Users` for our User management. On top, it would be nice to have familiarity with `AsyncIO in Python`, `REST APIs`, and `HTML Forms`.
 
-3. [SQLAlchemy](https://nextjs.org/) - XYZ for PostgreSQL
-
-Additionally, we are using `FastAPI_Users` for our User management. On top, it would be nice to have familiarity with `AsyncIO in Python`, `REST APIs`, and `HTML Forms`.
 
 
 ---
