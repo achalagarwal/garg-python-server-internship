@@ -26,17 +26,20 @@ Follow the following steps
 
 1. Clone this repo on your local machine. Read the [how to](https://www.atlassian.com/git/tutorials/setting-up-a-repository/git-clone) if you aren't sure.
 2. Make sure `poetry` is installed. You can find the installation guide at [Poetry's webpage](https://python-poetry.org/docs/). You can use [`pip` to install poetry](https://python-poetry.org/docs/#installing-with-pip) too.
-3. Install `postgresql` CLI.
+3. Install `postgresql` [CLI](https://www.timescale.com/blog/how-to-install-psql-on-mac-ubuntu-debian-windows/).
 4. Execute the following command in the directory
    ```bash 
    # make sure to `cd <project-directory>` before running the command
    poetry install
    psql -f init.sql
+   cp .env.example .env
+   poetry run bash init.sh
+   bash init.sh
    ```
 5. Finally, start the app
    ```bash 
    # in the same project-directory
-   uvicorn app.main:app  --workers 1 --reload
+   poetry run uvicorn app.main:app  --workers 1 --reload
    ```
 
 --- 

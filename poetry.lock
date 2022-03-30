@@ -245,7 +245,6 @@ python-versions = ">=3.7"
 [package.dependencies]
 email-validator = ">=1.1.0,<1.2"
 fastapi = ">=0.65.2,<0.76.0"
-fastapi-users-db-sqlalchemy = {version = ">=2.0.0", optional = true, markers = "extra == \"sqlalchemy2\""}
 makefun = ">=1.11.2,<1.14"
 passlib = {version = "1.7.4", extras = ["bcrypt"]}
 pyjwt = "2.3.0"
@@ -262,7 +261,7 @@ tortoise-orm = ["fastapi-users-db-tortoise (>=1.1.0)"]
 
 [[package]]
 name = "fastapi-users-db-sqlalchemy"
-version = "2.0.4"
+version = "3.0.0"
 description = "FastAPI Users database adapter for SQLAlchemy."
 category = "main"
 optional = false
@@ -370,6 +369,20 @@ pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
 requirements_deprecated_finder = ["pipreqs", "pip-api"]
 colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
+
+[[package]]
+name = "jinja2"
+version = "3.1.1"
+description = "A very fast and expressive template engine."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+MarkupSafe = ">=2.0"
+
+[package.extras]
+i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "makefun"
@@ -769,7 +782,7 @@ standard = ["httptools (>=0.2.0,<0.4.0)", "watchgod (>=0.6)", "python-dotenv (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "557ec38f2a556f876f7eee1e1f0787aeadd773f2fcaf1a6a837a10a70d820d3e"
+content-hash = "e5990f1fa2cbd90632fe8cafe43cc9eb0799cbe746c819c4d8b77fbf16c65839"
 
 [metadata.files]
 alembic = [
@@ -973,8 +986,8 @@ fastapi-users = [
     {file = "fastapi_users-9.2.6-py3-none-any.whl", hash = "sha256:ea2c248932db1c5a66f3b3f2c8b1d9aef58964fd4d8c0ec2df64845ca7c40182"},
 ]
 fastapi-users-db-sqlalchemy = [
-    {file = "fastapi-users-db-sqlalchemy-2.0.4.tar.gz", hash = "sha256:93bd5ba48f7a7e9fe43b62a48ad7c5ec5993c8230c6dafb61c341ceee811ebf1"},
-    {file = "fastapi_users_db_sqlalchemy-2.0.4-py3-none-any.whl", hash = "sha256:4d246157c18335353111bfdf47dca081a6663a337e2f7e9670eb9606730399bb"},
+    {file = "fastapi-users-db-sqlalchemy-3.0.0.tar.gz", hash = "sha256:29551c1babdfea3c964dc54aea5148431b066cdaea1dc44054a6e370368aee55"},
+    {file = "fastapi_users_db_sqlalchemy-3.0.0-py3-none-any.whl", hash = "sha256:f0e48d85a7ed9abd165f8acee5815171b26d5418986e7f72288045a6fd71cb33"},
 ]
 flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
@@ -1060,6 +1073,10 @@ iniconfig = [
 isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
+]
+jinja2 = [
+    {file = "Jinja2-3.1.1-py3-none-any.whl", hash = "sha256:539835f51a74a69f41b848a9645dbdc35b4f20a3b601e2d9a7e22947b15ff119"},
+    {file = "Jinja2-3.1.1.tar.gz", hash = "sha256:640bed4bb501cbd17194b3cace1dc2126f5b619cf068a726b98192a0fde74ae9"},
 ]
 makefun = [
     {file = "makefun-1.12.1-py2.py3-none-any.whl", hash = "sha256:639ac01a68ddd76ab156ca435bcd89dab25c717fb09af23f1563dc26362b4dcc"},

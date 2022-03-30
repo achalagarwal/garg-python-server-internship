@@ -50,11 +50,11 @@ class Settings(BaseSettings):
     DEFAULT_SQLALCHEMY_DATABASE_URI: str = ""
 
     # POSTGRESQL TEST DATABASE
-    TEST_DATABASE_HOSTNAME: str = "localhost"
-    TEST_DATABASE_USER: str = "test_user"
-    TEST_DATABASE_PASSWORD: str = "test_password"
-    TEST_DATABASE_PORT: str = "5432"
-    TEST_DATABASE_DB: str = "test_db"
+    TEST_DATABASE_HOSTNAME: str
+    TEST_DATABASE_USER: str
+    TEST_DATABASE_PASSWORD: str
+    TEST_DATABASE_PORT: str
+    TEST_DATABASE_DB: str
     TEST_SQLALCHEMY_DATABASE_URI: str = ""
 
     # FIRST SUPERUSER

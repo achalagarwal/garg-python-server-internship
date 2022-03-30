@@ -11,9 +11,11 @@ python-dotenv = "^0.19.2"
 pydantic = {extras = ["email"], version = "^1.9.0"}
 alembic = "^1.7.5"
 asyncpg = "^0.25.0"
-fastapi-users = {extras = ["sqlalchemy2"], version = "^9.2.0"}
+fastapi-users = "9.2.6"
 greenlet = "^1.1.2"
 python-multipart = "^0.0.5"
+Jinja2 = "^3.1.1"
+fastapi-users-db-sqlalchemy = "^3.0.0"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.12b0", allow-prereleases = true}

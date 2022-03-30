@@ -7,7 +7,7 @@ Create Date: 2022-03-20 17:59:34.576038
 """
 from alembic import op
 import sqlalchemy as sa
-
+from fastapi_users_db_sqlalchemy import guid
 
 # revision identifiers, used by Alembic.
 revision = '64455fb43d6d'
@@ -22,8 +22,8 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=True),
     sa.Column('base64', sa.Text(), nullable=True),
-    sa.Column('owner_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
+    sa.Column('user_id', guid.GUID(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_image_id'), 'image', ['id'], unique=False)
