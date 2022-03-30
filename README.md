@@ -7,9 +7,11 @@ Before we begin, let's familiarize ourselves with the technologies that we will 
 
 ### Technologies Used
 
-1. [FastAPI](https://developers.google.com/amp) - State-of-the-art component library for building performant web pages
+1. [FastAPI](https://fastapi.tiangolo.com) - State-of-the-art python web framework
 
-2. [SQLAlchemy](https://nextjs.org/) - ORM for PostgreSQL
+2. [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) - ORM for PostgreSQL
+
+(https://www.youtube.com/watch?v=4Zy90rd0bkU for a quick introduction video on the tools)
 
 Additionally, we are using `FastAPI_Users` for our User management. On top, it would be nice to have familiarity with `AsyncIO in Python`, `REST APIs`, and `HTML Forms`.
 
