@@ -4,6 +4,7 @@ SQL Alchemy models declaration.
 Note, imported by alembic migrations logic, see `alembic/env.py`
 """
 
+from datetime import datetime
 from re import I
 from typing import Any, cast
 from sqlalchemy.dialects.postgresql import UUID
@@ -11,12 +12,15 @@ from sqlalchemy.dialects.postgresql import UUID
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from sqlalchemy.orm.decl_api import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
+from sqlalchemy.sql import func
 from sqlalchemy import (
     Boolean,
     Column,
+    Index,
     ForeignKey,
     Integer,
     String,
+    DateTime,
     Text,
     ARRAY,
     delete,
@@ -66,8 +70,12 @@ class Invoice(Base):
     __tablename__ = "invoice"
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True)
-    invoice_id = Column(String)
-    items = Column(ARRAY(UUID))
-    company = Column(String) # change to company_id when we have the company model and ensure that all the items are under the same company id
+    invoice_id = Column(String, nullable=False, index=True)
+    items = Column(ARRAY(UUID), nullable=False)
+    quantities = Column(ARRAY(Integer), nullable=False)
+    company = Column(String, nullable=False) # change to company_id when we have the company model and ensure that all the items are under the same company id
     deliver_to = Column(String)
-    status = Column(String)
+    status = Column(String, nullable=False)
+
+    created_date = Column(DateTime,  default=datetime.utcnow(), nullable=False)
+    Index('idx_orderedby_created_date', created_date, postgresql_using='btree')
