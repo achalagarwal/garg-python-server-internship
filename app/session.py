@@ -10,3 +10,8 @@ else:
 
 async_engine = create_async_engine(sqlalchemy_database_uri, pool_pre_ping=True)
 async_session = sessionmaker(async_engine, expire_on_commit=False, class_=AsyncSession)
+
+# TODO ?
+## Base = declarative_base()
+## Note the line below
+## Base.query = session.query_property()

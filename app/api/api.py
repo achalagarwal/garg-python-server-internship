@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Form, status
 from fastapi.responses import RedirectResponse
 
-from fastapi_users.password import get_password_hash
+from fastapi_users.password import PasswordHelper
 
 from httpx import AsyncClient
 
@@ -42,6 +42,7 @@ api_router.include_router(
 
 client = AsyncClient(base_url="http://localhost:8000/")
 
+get_password_hash = PasswordHelper().hash
 
 # TODO:  
 # Please use multipart/form-data instead of JSON

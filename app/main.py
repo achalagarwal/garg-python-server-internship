@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.api import api_router
 from app.api.pages import page_router
+from app.api.sku import sku_router
 from app.core import config
 
 app = FastAPI(
@@ -29,3 +30,4 @@ if config.settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(api_router)
 app.include_router(page_router)
+app.include_router(sku_router)
