@@ -1,10 +1,12 @@
 from enum import Enum
 from re import I
 from uuid import UUID
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from fastapi_users import models
 from pydantic import UUID4, EmailStr, Field, BaseModel
+
+from app.schemas.sku import SKU
 
 class Status(str, Enum):
     PENDING = 'PENDING'
@@ -15,7 +17,7 @@ class Status(str, Enum):
 class InvoiceCreate(BaseModel):   
     # to be updated when we have the company model
     company: str
-    items: List[str]
+    items: Union[List[str], List[SKU]]
     quantities: List[int]
     deliver_to: Optional[str]
     invoice_id: str

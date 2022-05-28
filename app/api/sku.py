@@ -1,5 +1,5 @@
 
-from typing import Any
+from typing import Any, List
 from uuid import UUID
 import uuid
 from fastapi import APIRouter, Depends, Form, status
@@ -10,7 +10,7 @@ from httpx import AsyncClient
 
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.core import security
-from app.schemas import SKU as SKUSchema, SKUCreate
+from app.schemas import SKU as SKUSchema, SKUCreate, SKUInvoice
 from app.tests import utils
 from app.models import SKU 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +44,13 @@ async def post_sku(
     await session.commit()
 
 
-@sku_router.get("/sku/search", response_model=[])
+@sku_router.get("/sku", response_model=List[SKUSchema])
+async def get_sku(session: AsyncSession = Depends(get_session)):
+    skus_result = await session.execute(select(SKU))
+    skus = skus_result.scalars().all()
+    return skus
+
+@sku_router.get("/sku/search", response_model=List[SKUInvoice])
 async def search_sku(
     search: str,
     company: str,
@@ -59,8 +65,8 @@ async def search_sku(
     # skus = session.execute(select(SKU)).filter(
     #         SKU.company == company,
     #     ).with_entities(SKU.title, SKU.id)
-    title_id_mapping = {sku.title: sku.id for sku in skus}
+    title_mapping = {sku.title: sku for sku in skus}
     matched_sku_titles = map(lambda match: match[0], process.extract(search, map(lambda sku: sku.title, skus), limit=limit))
-    matched_skus = [(sku_title, title_id_mapping[sku_title]) for sku_title in matched_sku_titles]
+    matched_skus = [title_mapping[sku_title] for sku_title in matched_sku_titles]
 
     return matched_skus

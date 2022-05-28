@@ -18,6 +18,16 @@ class SKUCreate(BaseModel):
     image_id: Optional[int]
     weight: Optional[str]
     weight_unit: Optional[str]
-
+    class Config: 
+        orm_mode = True
 class SKU(SKUCreate):
     id: UUID4
+
+class SKUInvoice(BaseModel):
+    title: str
+    description: Optional[str]
+    quantity_unit: str
+    image_id: Optional[int]
+    id: UUID4
+    class Config: 
+        orm_mode = True

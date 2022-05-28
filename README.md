@@ -37,6 +37,8 @@ Follow the following steps
    ```bash 
    # in the same project-directory
    uvicorn app.main:app  --workers 1 --reload
+   # for deployment
+    gunicorn -w 2 -k uvicorn.workers.UvicornWorker  app.main:app --bind 0.0.0.0:8000
    ```
 
 --- 

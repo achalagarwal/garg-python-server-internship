@@ -9,6 +9,8 @@ from app.api.api import api_router
 from app.api.pages import page_router
 from app.api.sku import sku_router
 from app.api.invoice import invoice_router
+from app.api.sku_variants import sku_variant_router
+from app.api.warehouse_inventory import warehouse_inventory_router
 
 from app.core import config
 
@@ -34,3 +36,5 @@ app.include_router(api_router)
 app.include_router(page_router)
 app.include_router(sku_router)
 app.include_router(invoice_router)
+app.include_router(sku_variant_router)
+app.include_router(warehouse_inventory_router)
