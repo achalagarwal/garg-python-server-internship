@@ -26,11 +26,12 @@ client = AsyncClient(base_url="http://localhost:8000/")
 
 
 @sku_variant_router.get("/sku_variant", response_model=Dict)
-async def get_sku_variant(sku_id: str, session: AsyncSession = Depends(get_session)):
+async def get_sku_variant(sku_id: str, warehouse_id: UUID, session: AsyncSession = Depends(get_session)):
+
     sku_variants_result = await session.execute(select(SKUVariant).where(SKUVariant.parent_sku_id == sku_id))
     sku_variants = sku_variants_result.scalars().all()
 
-    base_query = select(WarehouseInventory) 
+    base_query = select(WarehouseInventory).where(WarehouseInventory.warehouse_id == warehouse_id) 
     query = base_query.where(WarehouseInventory.sku_variants.op('&&')([sku_variant.id for sku_variant in sku_variants]))
     
     inventory_result = await session.execute(query)
@@ -49,7 +50,7 @@ async def get_sku_variant(sku_id: str, session: AsyncSession = Depends(get_sessi
                     "quantity": location.quantities[i],
                 })
 
-
+    print(sku_variants_result_dict)
     return sku_variants_result_dict
 
 @sku_variant_router.post("/sku_variant", response_model=SKUVariantSchema)

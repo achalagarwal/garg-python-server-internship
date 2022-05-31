@@ -2,7 +2,7 @@
 Main FastAPI app instance declaration
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.api import api_router
@@ -11,6 +11,7 @@ from app.api.sku import sku_router
 from app.api.invoice import invoice_router
 from app.api.sku_variants import sku_variant_router
 from app.api.warehouse_inventory import warehouse_inventory_router
+from starlette.requests import Request
 
 from app.core import config
 
@@ -32,9 +33,12 @@ if config.settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+async def console_log_request_json(request: Request):
+    print(await request.json())
+
 app.include_router(api_router)
 app.include_router(page_router)
 app.include_router(sku_router)
 app.include_router(invoice_router)
 app.include_router(sku_variant_router)
-app.include_router(warehouse_inventory_router)
+app.include_router(warehouse_inventory_router, dependencies=[Depends(console_log_request_json)])

@@ -4,7 +4,7 @@ from typing import Optional
 from app.schemas.image import Image, ImageCreate
 
 from fastapi_users import models
-from pydantic import UUID4, EmailStr, Field, BaseModel
+from pydantic import UUID4, EmailStr, Field, BaseModel, Extra
 
 class SKUCreate(BaseModel):    
     title: str
@@ -22,6 +22,8 @@ class SKUCreate(BaseModel):
         orm_mode = True
 class SKU(SKUCreate):
     id: UUID4
+    class Config:
+        extra: Extra.ignore
 
 class SKUInvoice(BaseModel):
     title: str

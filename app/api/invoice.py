@@ -40,10 +40,11 @@ async def get_pending_invoices(page: int = 0, page_size:int = 25, session: Async
         ).order_by(Invoice.created_date).offset(page*page_size).limit(page_size)
     )
     invoices = invoices_result.scalars().all()
-    
+    invoices_result = []
     for invoice in invoices:
-        invoice_items_result = await session.execute(select(SKU).where(SKU.id.in_(invoice.items)))
-        invoice.items = invoice_items_result.scalars().all() 
-
+        invoice_result = invoice.__dict__
+        invoice_items_result = await session.execute(select(SKU).where(SKU.id.in_([str(id) for id in invoice.items])))
+        invoice_result["items"] = [invoice_items.__dict__ for invoice_items in invoice_items_result.scalars().all()]
+        invoices_result.append(invoice_result)
     return invoices
 
