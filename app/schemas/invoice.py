@@ -1,5 +1,4 @@
 from enum import Enum
-from re import I
 from typing import Any, List, Optional, Union
 
 from fastapi_users import models

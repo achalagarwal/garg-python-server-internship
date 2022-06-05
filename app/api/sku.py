@@ -10,7 +10,7 @@ from httpx import AsyncClient
 
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.core import security
-from app.schemas import SKU as SKUSchema, SKUCreate, SKUInvoice
+from app.schemas import SKU as SKUSchema, SKUCreate, SKUInvoice, SKUPatch
 from app.tests import utils
 from app.models import SKU 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,8 +23,21 @@ sku_router = APIRouter()
 client = AsyncClient(base_url="http://localhost:8000/")
 
 
-# TODO:  
-# Please use multipart/form-data instead of JSON
+@sku_router.patch("/sku")
+async def patch_sku(
+    id: str,
+    sku_updates: SKUPatch,
+    session: AsyncSession = Depends(get_session)
+):
+    sku_result = await session.execute(select(SKU).where(SKU.id == id))
+    sku = sku_result.scalar_one()
+    for key, value in sku_updates:
+        if value is None:
+            continue
+        setattr(sku, key, value)
+    await session.commit()
+
+
 @sku_router.post("/sku", response_model=SKUSchema)
 async def post_sku(
     sku: SKUCreate,

@@ -8,17 +8,20 @@ fastapi_users in defined in deps, because it also
 includes useful dependencies.
 """
 
+from datetime import datetime
+from io import BytesIO
 from typing import Any
-from fastapi import APIRouter, Depends, Form, status
+import uuid
+from fastapi import APIRouter, Depends, Form, status, File, UploadFile
 from fastapi.responses import RedirectResponse
-
 from fastapi_users.password import PasswordHelper
 
 from httpx import AsyncClient
-
+from app.models import Image
 from app.api.deps import fastapi_users, get_session, get_current_user
-from app.core import security
-from app.schemas import Image, UserDB
+from app.core import security, config
+from app.schemas import Image as ImageSchema, UserDB
+from PIL import Image as PILImage
 from app.tests import utils
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,18 +47,25 @@ client = AsyncClient(base_url="http://localhost:8000/")
 
 get_password_hash = PasswordHelper().hash
 
-# TODO:  
-# Please use multipart/form-data instead of JSON
-@api_router.post("/image", response_model=Image)
-async def post_image(
-    file: Any = Form(...),
-    session: AsyncSession = Depends(get_session),
-):
-    """
-    Insert image in db
-    """
 
-    raise NotImplementedError("Please remove this statement after implementing this function")
+from fastapi import Request
+@api_router.post("/image", response_model=ImageSchema)
+async def post_image(
+    image: UploadFile = File(default=None), 
+    title: str = Form(default=""),
+    session: AsyncSession = Depends(get_session)
+):
+    timestamp = datetime.utcnow()
+    id = uuid.uuid4()
+    im = PILImage.open(image.file)
+    im.save(f"{config.settings.FILE_STORE}/images/{id}.png", format="png", optimize=True, quality=50)
+    image_dict = {"id": id, "user_id": None, "title": title, "timestamp": timestamp}
+    image = Image(**image_dict)
+    session.add(image)
+    await session.commit()
+    
+    return image.__dict__
+
 
 @api_router.post("/login", response_model=UserDB)
 async def login():

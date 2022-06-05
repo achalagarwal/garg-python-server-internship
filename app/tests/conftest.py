@@ -2,7 +2,7 @@ import asyncio
 from typing import AsyncGenerator
 
 import pytest
-from fastapi_users.password import get_password_hash
+from fastapi_users.password import PasswordHelper
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,8 @@ from app.main import app
 from app.models import Base
 from app.session import async_engine, async_session
 from app.tests import utils
+
+get_password_hash = PasswordHelper().hash
 
 default_user_email = "garg@garghouse.co.in"
 default_user_hash = get_password_hash("garg")

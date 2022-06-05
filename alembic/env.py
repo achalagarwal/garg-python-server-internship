@@ -34,6 +34,8 @@ def get_database_uri():
 
     if os.environ.get("ENVIRONMENT") == "PYTEST":
         return app_config.settings.TEST_SQLALCHEMY_DATABASE_URI
+    elif os.environ.get("ENVIRONMENT") == "INTERVIEW":
+        return app_config.settings.INTERVIEW_SQLALCHEMY_DATABASE_URI
     return app_config.settings.DEFAULT_SQLALCHEMY_DATABASE_URI
 
 

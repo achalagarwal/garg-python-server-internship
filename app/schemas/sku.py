@@ -15,7 +15,7 @@ class SKUCreate(BaseModel):
     company: str
     barcode: Optional[str]
     image: Optional[ImageCreate]
-    image_id: Optional[int]
+    image_id: Optional[UUID4]
     weight: Optional[str]
     weight_unit: Optional[str]
     class Config: 
@@ -25,6 +25,12 @@ class SKU(SKUCreate):
     class Config:
         extra: Extra.ignore
 
+
+class SKUPatch(BaseModel):
+    image_id: Optional[UUID4]
+    price: Optional[str]
+    barcode: Optional[str]
+    weight: Optional[str]
 class SKUInvoice(BaseModel):
     title: str
     description: Optional[str]

@@ -3,6 +3,7 @@ Main FastAPI app instance declaration
 """
 
 from fastapi import FastAPI, Depends
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.api import api_router
@@ -42,3 +43,4 @@ app.include_router(sku_router)
 app.include_router(invoice_router)
 app.include_router(sku_variant_router)
 app.include_router(warehouse_inventory_router, dependencies=[Depends(console_log_request_json)])
+app.mount("/static", StaticFiles(directory=config.settings.FILE_STORE), name="file_store")

@@ -32,7 +32,7 @@ PYPROJECT_CONTENT = toml.load(f"{PROJECT_DIR}/pyproject.toml")["tool"]["poetry"]
 class Settings(BaseSettings):
     # CORE SETTINGS
     SECRET_KEY: str
-    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "PRODUCTION"]
+    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "PRODUCTION", "INTERVIEW"]
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     BACKEND_CORS_ORIGINS: Union[str, list[AnyHttpUrl]]
 
@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = PYPROJECT_CONTENT["name"]
     VERSION: str = PYPROJECT_CONTENT["version"]
     DESCRIPTION: str = PYPROJECT_CONTENT["description"]
+
+    # FILE STORE PATH
+    FILE_STORE: str
 
     # POSTGRESQL DEFAULT DATABASE
     DEFAULT_DATABASE_HOSTNAME: str
@@ -56,6 +59,14 @@ class Settings(BaseSettings):
     TEST_DATABASE_PORT: str = "5432"
     TEST_DATABASE_DB: str = "test_db"
     TEST_SQLALCHEMY_DATABASE_URI: str = ""
+
+    # POSTGRESQL DEFAULT DATABASE
+    INTERVIEW_DATABASE_HOSTNAME: str
+    INTERVIEW_DATABASE_USER: str
+    INTERVIEW_DATABASE_PASSWORD: str
+    INTERVIEW_DATABASE_PORT: str
+    INTERVIEW_DATABASE_DB: str
+    INTERVIEW_SQLALCHEMY_DATABASE_URI: str = ""
 
     # FIRST SUPERUSER
     FIRST_SUPERUSER_EMAIL: EmailStr
@@ -89,6 +100,18 @@ class Settings(BaseSettings):
             port=values["TEST_DATABASE_PORT"],
             path=f"/{values['TEST_DATABASE_DB']}",
         )
+
+    @validator("INTERVIEW_SQLALCHEMY_DATABASE_URI")
+    def _assemble_interview_db_connection(cls, v: str, values: dict[str, str]) -> str:
+        return AnyUrl.build(
+            scheme="postgresql+asyncpg",
+            user=values["INTERVIEW_DATABASE_USER"],
+            password=values["INTERVIEW_DATABASE_PASSWORD"],
+            host=values["INTERVIEW_DATABASE_HOSTNAME"],
+            port=values["INTERVIEW_DATABASE_PORT"],
+            path=f"/{values['INTERVIEW_DATABASE_DB']}",
+        )
+
 
     class Config:
         env_file = f"{PROJECT_DIR}/.env"

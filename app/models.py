@@ -43,10 +43,10 @@ class Image(Base):
 
     __tablename__ = "image"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True)
+    title = Column(String, nullable=False)
     base64 = Column(Text)
-
+    timestamp = Column(DateTime)
     user_id = Column(GUID, ForeignKey("user.id"))
     user = relationship("UserTable", back_populates="images")
 
@@ -64,7 +64,7 @@ class SKU(Base):
     quantity_unit = Column(String) # uom (Unit of Measurement)
     company = Column(String) # change to company_id when we have the company model
     barcode = Column(String)
-    image_id = Column(Integer, ForeignKey("image.id"))
+    image_id = Column(UUID(as_uuid=True), ForeignKey("image.id"))
 
 
 class SKUVariant(Base):
@@ -114,7 +114,8 @@ class WarehouseInventory(Base):
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouse.id"), nullable=False, index=True)
     sku_variants = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
     quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
-
+    projected_quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
+    
 
     # create a unique constraint on row, column, warehouse_id
     Index('idx_row_column', row, column)

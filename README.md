@@ -41,6 +41,11 @@ Follow the following steps
     gunicorn -w 2 -k uvicorn.workers.UvicornWorker  app.main:app --bind 0.0.0.0:8000
    ```
 
+6. Upload the data directory to Google Drive using
+   ```bash
+      gdrive sync upload --keep-remote /Users/auchie/Data/Storewise 1Q8P1aoNzvMTmBDDQfndHzixGVm4IUAWt
+   ```
+
 --- 
 
 ## Assignment

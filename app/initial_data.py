@@ -8,7 +8,7 @@ By default `main` create a superuser if it does not exist.
 import asyncio
 from typing import Optional
 
-from fastapi_users.password import get_password_hash
+from fastapi_users.password import PasswordHelper
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy import select
 
@@ -17,6 +17,7 @@ from app.core import config
 from app.models import UserTable
 from app.session import async_session
 
+get_password_hash = PasswordHelper().hash
 
 async def main() -> None:
     

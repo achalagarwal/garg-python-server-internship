@@ -4,11 +4,13 @@ from app.schemas import UserDB
 from app.tests import utils
 from app.api.deps import get_user_manager, get_user_db
 
-from fastapi_users.password import get_password_hash
+from fastapi_users.password import PasswordHelper
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi import Depends
 from sqlalchemy.sql import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+get_password_hash = PasswordHelper().hash
 
 # All test coroutines in file will be treated as marked (async allowed).
 pytestmark = pytest.mark.asyncio
