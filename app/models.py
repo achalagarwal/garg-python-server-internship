@@ -83,6 +83,10 @@ class Invoice(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True)
     invoice_id = Column(String, nullable=False, index=True)
+
+    warehouse_invoices = relationship("WarehouseInvoice", back_populates="parent_invoice")
+
+    # sku ids
     items = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
     quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
     company = Column(String, nullable=False) # change to company_id when we have the company model and ensure that all the items are under the same company id
@@ -91,6 +95,26 @@ class Invoice(Base):
 
     created_date = Column(DateTime,  default=datetime.utcnow(), nullable=False)
     Index('idx_orderedby_created_date', created_date, postgresql_using='btree')
+
+
+class WarehouseInvoice(Base):
+
+    __tablename__ = "warehouse_invoice"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True)
+    parent_invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoice.id"), nullable=False, index=True)
+    parent_invoice = relationship("Invoice", back_populates="warehouse_invoices")
+
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouse.id"), nullable=False, index=True)
+    
+    warehouse_inventories = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
+    sku_variants = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
+    skus = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
+    quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
+    
+    created_at = Column(DateTime,  default=datetime.utcnow(), nullable=False)
+    Index('idx_orderedby_created_date_warehouse_invoice', created_at, postgresql_using='btree')
+
 
 
 class Warehouse(Base):
@@ -112,10 +136,9 @@ class WarehouseInventory(Base):
     row = Column(Integer, nullable=False)
     column = Column(Integer, nullable=False)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouse.id"), nullable=False, index=True)
-    sku_variants = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False)
-    quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
-    projected_quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False)
-    
+    sku_variants = Column(MutableList.as_mutable(ARRAY(UUID(as_uuid=True))), nullable=False, server_default="{}")
+    quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False, server_default="{}")
+    projected_quantities = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=False, server_default="{}")
 
     # create a unique constraint on row, column, warehouse_id
     Index('idx_row_column', row, column)

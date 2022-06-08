@@ -1,10 +1,10 @@
 from enum import Enum
 from typing import Any, List, Optional, Union
 
-from fastapi_users import models
 from pydantic import UUID4, EmailStr, Field, BaseModel, Extra
-
+from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from app.schemas.sku import SKU
+from datetime import date
 
 class Status(str, Enum):
     PENDING = 'PENDING'
@@ -20,6 +20,16 @@ class InvoiceCreate(BaseModel):
     deliver_to: Optional[str]
     invoice_id: str
 
+
+class WarehouseInvoice(BaseModel):
+    company: str
+    status: Status
+    invoice_id: str
+    deliver_to: Optional[str]
+    warehouse_items: List[WarehouseInventoryPick]
+    created_at: date
+    id: UUID4
+
 class Invoice(InvoiceCreate):
     id: UUID4
     status: Status # Enum: pending, picking, transit, complete
@@ -27,3 +37,4 @@ class Invoice(InvoiceCreate):
         use_enum_values = True
         orm_mode = True
         extra = Extra.ignore
+

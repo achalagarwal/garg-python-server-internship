@@ -1,10 +1,10 @@
 from re import I
 import uuid
-from typing import Optional
+from typing import Optional, Union
 from app.schemas.image import Image, ImageCreate
 
 from fastapi_users import models
-from pydantic import UUID4, EmailStr, Field, BaseModel, Extra
+from pydantic import UUID4, UUID1, EmailStr, Field, BaseModel, Extra
 
 class SKUCreate(BaseModel):    
     title: str
