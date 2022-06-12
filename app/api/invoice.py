@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime
 import enum
 from re import sub
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union
 from urllib.error import HTTPError
 import uuid
 from fastapi import APIRouter, Depends, Form, status, HTTPException
@@ -13,8 +13,9 @@ from httpx import AsyncClient
 
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.schemas import Invoice as InvoiceSchema, UserDB, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
-from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice
-from app.schemas.invoice import Status as InvoiceStatus
+from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails
+from app.schemas import invoice
+from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, WarehouseInvoiceResponse, WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
 from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, over
@@ -270,8 +271,32 @@ async def get_pending_invoices(page: int = 0, page_size:int = 25, session: Async
         invoices_result.append(invoice_result)
     return invoices
 
-@invoice_router.get("/api/warehouse_invoice", response_model=List[WarehouseInvoiceSchema])
-async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size:int = 25, session: AsyncSession = Depends(get_session)):
+@invoice_router.patch("/api/warehouse_invoice")
+async def patch_invoice(
+    id: str,
+    warehouse_invoice_updates: WarehouseInvoicePatch,
+    session: AsyncSession = Depends(get_session)
+):
+    warehouse_invoice = await session.execute(
+        select(WarehouseInvoice).options(
+            joinedload(WarehouseInvoice.parent_invoice).options(joinedload(Invoice.warehouse_invoices))
+        ).where(WarehouseInvoice.id == id)
+    )
+    warehouse_invoice: WarehouseInvoice = warehouse_invoice.unique().scalar_one()
+
+    warehouse_invoice.status = warehouse_invoice_updates.status
+    for warehouse_invoice in warehouse_invoice.parent_invoice.warehouse_invoices:
+        if warehouse_invoice.status != warehouse_invoice_updates.status:
+            await session.commit()
+            return
+    
+    warehouse_invoice.parent_invoice.status = warehouse_invoice_updates.status
+
+    await session.commit()
+    return
+
+@invoice_router.get("/api/warehouse_invoice", response_model=WarehouseInvoiceResponse)
+async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size:int = 25, last_updated_timestamp:Union[str, None] = None, session: AsyncSession = Depends(get_session)):
     # warehouse_invoices_query = select(WarehouseInvoice).join(
     #         Invoice,
     #         Invoice.id == WarehouseInvoice.parent_invoice_id
@@ -285,35 +310,56 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
     #             WarehouseInvoice.warehouse_id == warehouse_id
     #         ).order_by(WarehouseInvoice.created_at).offset(page*page_size).limit(page_size)
     #  TODO: Debug the above query and combine both queries into one
+
+    
     warehouse_invoices_query = select(WarehouseInvoice, Invoice).options(joinedload(WarehouseInvoice.parent_invoice)).join(
             Invoice,
             Invoice.id == WarehouseInvoice.parent_invoice_id
             ).where(
-                or_(Invoice.status == InvoiceStatus.PENDING, Invoice.status == InvoiceStatus.PICKING),
-                WarehouseInvoice.warehouse_id == warehouse_id
+                or_(Invoice.status == InvoiceStatus.PENDING, Invoice.status == InvoiceStatus.PICKING, Invoice.status == InvoiceStatus.READY_FOR_TRANSIT),
+                WarehouseInvoice.warehouse_id == warehouse_id,
+                or_(WarehouseInvoice.status == InvoiceStatus.PENDING, WarehouseInvoice.status == InvoiceStatus.PICKING, WarehouseInvoice.status == InvoiceStatus.IN_TRANSIT, WarehouseInvoice.status == InvoiceStatus.READY_FOR_TRANSIT)
             ).order_by(WarehouseInvoice.created_at).offset(page*page_size).limit(page_size)
 
+    if last_updated_timestamp:
+        print(last_updated_timestamp)
+        print(datetime.strptime(last_updated_timestamp))
+        
+        warehouse_invoices_query = warehouse_invoices_query.where(
+            WarehouseInvoice.updated_at > datetime.strptime(last_updated_timestamp),
+            Invoice.updated_at > datetime.strptime(last_updated_timestamp)
+        )
+    
     warehouse_invoices_result = await session.execute(warehouse_invoices_query)
 
     warehouse_invoices: List[WarehouseInvoice] = warehouse_invoices_result.scalars().all()
+    
+
+    # TODO: Fix, this will crash when there are no invoices
+    response_updated_timestamp = warehouse_invoices[0].updated_at
+    for warehouse_invoice in warehouse_invoices:
+        response_updated_timestamp = max(response_updated_timestamp, warehouse_invoice.updated_at)
+        response_updated_timestamp = max(response_updated_timestamp, warehouse_invoice.parent_invoice.updated_at)
+ 
+    warehouse_invoices = list(filter(lambda x: x.status != InvoiceStatus.IN_TRANSIT, warehouse_invoices))
 
     warehouse_inventory_ids = []
     for warehouse_invoice in warehouse_invoices:
         warehouse_inventory_ids.extend(warehouse_invoice.warehouse_inventories)
-
+    
     warehouse_inventories_result = await session.execute(
-        select(WarehouseInventory.id, WarehouseInventory.row, WarehouseInventory.column).where(
-            WarehouseInventory.id.in_(warehouse_inventory_ids)
+       select(WarehouseInventory.id, WarehouseInventory.row, WarehouseInventory.column).where(
+            WarehouseInventory.id.in_(warehouse_inventory_ids),
         )
     )
     warehouse_inventories = warehouse_inventories_result.all()
     warehouse_inventories_map = { warehouse_inventory[0]:warehouse_inventory for warehouse_inventory in warehouse_inventories}
 
-    warehouse_invoices_response = []
+    warehouse_invoices_response = {"last_updated_at": response_updated_timestamp, "invoices": []}
     for warehouse_invoice in warehouse_invoices:
         warehouse_invoice_response = WarehouseInvoiceSchema(
             company=warehouse_invoice.parent_invoice.company,
-            status=warehouse_invoice.parent_invoice.status,
+            status=warehouse_invoice.status,
             id=warehouse_invoice.id,
             invoice_id=warehouse_invoice.parent_invoice.invoice_id,
             deliver_to=warehouse_invoice.parent_invoice.deliver_to,
@@ -336,7 +382,91 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
                         ) for i in range(len(warehouse_invoice.skus)) if not warehouse_invoice.warehouse_inventories[i]
                 ]
         )
-        warehouse_invoices_response.append(warehouse_invoice_response)
+        warehouse_invoices_response["invoices"].append(warehouse_invoice_response)
 
     return warehouse_invoices_response
 
+
+@invoice_router.post("/api/warehouse_invoice_details")
+async def post_warehouse_invoice_details(
+    warehouse_invoice_details: WarehouseInvoiceDetailsSchema,
+    session: AsyncSession = Depends(get_session)
+):
+    warehouse_invoice = await session.execute(
+        select(WarehouseInvoice).where(
+            WarehouseInvoice.id == warehouse_invoice_details.warehouse_invoice_id
+        )
+    )
+    warehouse_invoice: WarehouseInvoice = warehouse_invoice.unique().scalar_one()
+    warehouse_inventories = await session.execute(
+        select(WarehouseInventory).where(
+            WarehouseInventory.id.in_(
+                warehouse_invoice.warehouse_inventories
+            )
+        )
+    )
+
+    warehouse_inventories: List[WarehouseInventory] = warehouse_inventories.scalars().all()
+
+    warehouse_inventories_id_map = {wi.id: wi for wi in warehouse_inventories}
+
+
+    initially_suggested_updates = []
+    for i, warehouse_inventory_id in enumerate(warehouse_invoice.warehouse_inventories):
+        if warehouse_inventory_id is None:
+            continue
+        warehouse_inventory = warehouse_inventories_id_map[warehouse_inventory_id]
+        initially_suggested_updates.append({
+            "row": warehouse_inventory.row,
+            "column": warehouse_inventory.column,
+            "sku_variant": warehouse_invoice.sku_variants[i],
+            "quantity": warehouse_invoice.quantities[i]
+        })
+    
+    initially_suggested_updates.sort(
+        key=lambda update: (update["sku_variant"], update["row"], update["column"], update["quantity"])
+    )
+
+    actual_updates = list(map(
+        lambda update: {
+            "row": update.row,
+            "column": update.column,
+            "sku_variant": update.sku_variant_id,
+            "quantity": update.quantity
+        }, 
+        warehouse_invoice_details.inventory_updates
+        )
+    )
+
+    updates_are_matching = True
+
+    if len(actual_updates) != len(initially_suggested_updates):
+        updates_are_matching = False
+
+    else:
+
+        actual_updates.sort(
+            key=lambda update: (update["sku_variant"], update["row"], update["column"], update["quantity"])
+        )
+
+        for i, suggested_update in enumerate(initially_suggested_updates):
+            if suggested_update == actual_updates[i]:
+                continue
+            else:
+                updates_are_matching = False
+                break
+            
+    warehouse_invoice_details_object = WarehouseInvoiceDetails(
+        id= uuid.uuid4(),
+        warehouse_invoice_id = warehouse_invoice_details.warehouse_invoice_id,
+        time_per_item = warehouse_invoice_details.time_per_item
+    )
+
+    if not updates_are_matching:
+        warehouse_invoice_details_object.columns = list(map(lambda x: x["column"], actual_updates))
+        warehouse_invoice_details_object.rows = list(map(lambda x: x["row"], actual_updates))
+        warehouse_invoice_details_object.quantities = list(map(lambda x: x["quantity"], actual_updates))
+        warehouse_invoice_details_object.sku_variants = list(map(lambda x: x["sku_variant"], actual_updates))
+
+    session.add(warehouse_invoice_details_object)
+    await session.commit()

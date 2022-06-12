@@ -11,6 +11,7 @@ from httpx import AsyncClient
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.core import security
 from app.schemas import SKU as SKUSchema, SKUCreate, SKUInvoice, SKUPatch
+from app.schemas.sku import SKUGetResponse
 from app.tests import utils
 from app.models import SKU 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,6 +64,16 @@ async def get_sku(session: AsyncSession = Depends(get_session)):
     skus = skus_result.scalars().all()
     return skus
 
+@sku_router.get("/api/sku", response_model=SKUGetResponse)
+async def get_skus(session: AsyncSession = Depends(get_session)):
+    # TODO: Filter by warehouse id?
+
+    skus_result = await session.execute(select(SKU).where(SKU.disabled == None))
+    skus: List[SKU] = skus_result.scalars().all()
+    last_updated_at = max(skus, key=lambda x: x.updated_at, default=None).updated_at
+    skus_response = {sku.id: sku for sku in skus}
+    return {"skus": skus_response, "last_updated_at": last_updated_at}
+
 @sku_router.get("/sku/search", response_model=List[SKUInvoice])
 async def search_sku(
     search: str,
@@ -73,7 +84,7 @@ async def search_sku(
 
     # we might not need to complicate this function
     # once we have an index on the "title"
-    skus_result = await session.execute(select(SKU).where(SKU.company == company))
+    skus_result = await session.execute(select(SKU).where(SKU.company == company, SKU.disabled == None))
     skus = skus_result.scalars().all()
     # skus = session.execute(select(SKU)).filter(
     #         SKU.company == company,

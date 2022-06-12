@@ -5,6 +5,7 @@ Note, imported by alembic migrations logic, see `alembic/env.py`
 """
 
 from datetime import datetime
+from multiprocessing.dummy import Array
 from re import I
 from typing import Any, cast
 from sqlalchemy.dialects.postgresql import UUID
@@ -12,7 +13,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from sqlalchemy.orm.decl_api import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy import (
     Boolean,
@@ -24,16 +25,22 @@ from sqlalchemy import (
     DateTime,
     Date,
     Text,
+    Float,
     delete,
-    func,
     select,
     update,
 )
 from fastapi_users_db_sqlalchemy.guid import GUID
 from app.utils import MutableList
 
-Base = cast(Any, declarative_base())
+_Base = cast(Any, declarative_base())
 
+class Base(_Base):
+    __abstract__ = True
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=datetime.utcnow())
+    
 class UserTable(Base, SQLAlchemyBaseUserTable):
 
     images = relationship("Image", back_populates="user")
@@ -65,7 +72,10 @@ class SKU(Base):
     company = Column(String) # change to company_id when we have the company model
     barcode = Column(String)
     image_id = Column(UUID(as_uuid=True), ForeignKey("image.id"))
+    sku_variants = relationship("SKUVariant", back_populates="sku")
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=datetime.utcnow(), index=True)
 
+    disabled = Column(Boolean, index=True)
 
 class SKUVariant(Base):
 
@@ -73,6 +83,7 @@ class SKUVariant(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True)
     parent_sku_id = Column(UUID(as_uuid=True), ForeignKey("sku.id"), nullable=False, index=True)
+    sku = relationship("SKU", back_populates="sku_variants")
     manufactured_date = Column(Date)
     created_at = Column(DateTime, nullable=False)
 
@@ -92,8 +103,11 @@ class Invoice(Base):
     company = Column(String, nullable=False) # change to company_id when we have the company model and ensure that all the items are under the same company id
     deliver_to = Column(String)
     status = Column(String, nullable=False)
-
+    # type = Column(String, nullable=False)
+    # TODO: Rename to Invoice Date
     created_date = Column(DateTime,  default=datetime.utcnow(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=datetime.utcnow(), index=True)
+
     Index('idx_orderedby_created_date', created_date, postgresql_using='btree')
 
 
@@ -104,6 +118,7 @@ class WarehouseInvoice(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True)
     parent_invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoice.id"), nullable=False, index=True)
     parent_invoice = relationship("Invoice", back_populates="warehouse_invoices")
+    status = Column(String, nullable=False)
 
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouse.id"), nullable=False, index=True)
     
@@ -115,7 +130,23 @@ class WarehouseInvoice(Base):
     created_at = Column(DateTime,  default=datetime.utcnow(), nullable=False)
     Index('idx_orderedby_created_date_warehouse_invoice', created_at, postgresql_using='btree')
 
+class WarehouseInvoiceDetails(Base):
 
+    __tablename__ = "warehouse_invoice_details"
+    warehouse_invoice_id = Column(UUID(as_uuid=True), ForeignKey("warehouse_invoice.id"), nullable=False, index=True)
+    
+    time_per_item = Column(ARRAY(Float))
+
+    # Array logs for each update
+    # These are empty if they are same as the warehouse_invoice.items
+
+    sku_variants = Column(ARRAY(UUID(as_uuid=True)))
+    rows = Column(ARRAY(Integer))
+    columns = Column(ARRAY(Integer))
+    quantities = Column(ARRAY(Integer))
+
+
+    pass
 
 class Warehouse(Base):
 

@@ -912,6 +912,21 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "sqladmin"
+version = "0.1.9"
+description = "Admin interface for SQLAlchemy."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+jinja2 = "*"
+python-multipart = "*"
+sqlalchemy = ">=1.4,<1.5"
+starlette = "*"
+wtforms = ">=3,<4"
+
+[[package]]
 name = "sqlalchemy"
 version = "1.4.29"
 description = "Database Abstraction Library"
@@ -1080,10 +1095,24 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[[package]]
+name = "wtforms"
+version = "3.0.1"
+description = "Form validation and rendering for Python web development."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+MarkupSafe = "*"
+
+[package.extras]
+email = ["email-validator"]
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "62bc8d3ee7e3afe2af356a13689e82d5970ec992979204015dc430701e29bc31"
+content-hash = "468535adffaed05d0192a8e3abbb8ed3ebe07f7870f42651dc259b5b8cdd029b"
 
 [metadata.files]
 alembic = [
@@ -1722,6 +1751,10 @@ sniffio = [
     {file = "sniffio-1.2.0-py3-none-any.whl", hash = "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663"},
     {file = "sniffio-1.2.0.tar.gz", hash = "sha256:c4666eecec1d3f50960c6bdf61ab7bc350648da6c126e3cf6898d8cd4ddcd3de"},
 ]
+sqladmin = [
+    {file = "sqladmin-0.1.9-py3-none-any.whl", hash = "sha256:d01aa0adf6f8e2670a7cf5793e3481309d9549b5f2275981aefbff047088ed9c"},
+    {file = "sqladmin-0.1.9.tar.gz", hash = "sha256:53e122c99635c88422c552f81323e1eee844227f291a22a2176f4267ff0a292c"},
+]
 sqlalchemy = [
     {file = "SQLAlchemy-1.4.29-cp27-cp27m-macosx_10_14_x86_64.whl", hash = "sha256:da64423c05256f4ab8c0058b90202053b201cbe3a081f3a43eb590cd554395ab"},
     {file = "SQLAlchemy-1.4.29-cp27-cp27m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:0fc4eec2f46b40bdd42112b3be3fbbf88e194bcf02950fbb88bcdc1b32f07dc7"},
@@ -1821,4 +1854,8 @@ uvloop = [
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
+]
+wtforms = [
+    {file = "WTForms-3.0.1-py3-none-any.whl", hash = "sha256:837f2f0e0ca79481b92884962b914eba4e72b7a2daaf1f939c890ed0124b834b"},
+    {file = "WTForms-3.0.1.tar.gz", hash = "sha256:6b351bbb12dd58af57ffef05bc78425d08d1914e0fd68ee14143b7ade023c5bc"},
 ]

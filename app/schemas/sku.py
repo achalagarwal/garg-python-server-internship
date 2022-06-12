@@ -1,6 +1,7 @@
+from datetime import datetime
 from re import I
 import uuid
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 from app.schemas.image import Image, ImageCreate
 
 from fastapi_users import models
@@ -25,6 +26,9 @@ class SKU(SKUCreate):
     class Config:
         extra: Extra.ignore
 
+class SKUGetResponse(BaseModel):
+    last_updated_at: datetime
+    skus: Dict
 
 class SKUPatch(BaseModel):
     image_id: Optional[UUID4]

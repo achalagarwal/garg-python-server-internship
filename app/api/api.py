@@ -17,14 +17,15 @@ from fastapi.responses import RedirectResponse
 from fastapi_users.password import PasswordHelper
 
 from httpx import AsyncClient
-from app.models import Image
+from app.models import SKU, Image, Invoice, WarehouseInvoice
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.core import security, config
 from app.schemas import Image as ImageSchema, UserDB
 from PIL import Image as PILImage
+from app.schemas.utils import DatabaseHasUpdates, LocalDataTimestamps
 from app.tests import utils
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy import select, or_
 
 api_router = APIRouter()
 api_router.include_router(
@@ -105,5 +106,32 @@ async def signup(
     return RedirectResponse(url=f'/home?token={access_token}', status_code=status.HTTP_303_SEE_OTHER,)
 
 
+@api_router.post("/database_updates", response_model=DatabaseHasUpdates)
+async def check_database_updates(
+    local_data_timestamps: LocalDataTimestamps,
+    session: AsyncSession = Depends(get_session)
+):
+    # TODO: USE READ_UNCOMMITTED FOR NOLOCK MODE
+    response = DatabaseHasUpdates(invoice=False, sku=False)
+    
+    if local_data_timestamps.invoice is None:
+        response.invoice = True
+    
+    if local_data_timestamps.sku is None:
+        response.sku = True
 
+    if response.invoice is False:
+        invoice_table_new_row_result = await session.execute(select(Invoice).join(WarehouseInvoice, Invoice.id == WarehouseInvoice.parent_invoice_id).where(
+                or_(Invoice.updated_at > local_data_timestamps.invoice, WarehouseInvoice.updated_at > local_data_timestamps.invoice)
+            ).limit(1))
+        invoice_table_new_row = invoice_table_new_row_result.scalar_one_or_none()
+        if invoice_table_new_row:
+            response.invoice = True
 
+    if response.sku is False:
+        sku_table_new_row_result = await session.execute(select(SKU).where(SKU.updated_at > local_data_timestamps.sku).limit(1))
+        sku_table_new_row = sku_table_new_row_result.one_or_none()
+        if sku_table_new_row:
+            response.sku = True
+    return response
+    
