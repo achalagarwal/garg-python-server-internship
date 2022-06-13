@@ -105,11 +105,11 @@ class Settings(BaseSettings):
     def _assemble_interview_db_connection(cls, v: str, values: dict[str, str]) -> str:
         return AnyUrl.build(
             scheme="postgresql+asyncpg",
-            user=values["INTERVIEW_DATABASE_USER"],
-            password=values["INTERVIEW_DATABASE_PASSWORD"],
-            host=values["INTERVIEW_DATABASE_HOSTNAME"],
-            port=values["INTERVIEW_DATABASE_PORT"],
-            path=f"/{values['INTERVIEW_DATABASE_DB']}",
+            user=values.get("INTERVIEW_DATABASE_USER", ""),
+            password=values.get("INTERVIEW_DATABASE_PASSWORD", ""),
+            host=values.get("INTERVIEW_DATABASE_HOSTNAME",""),
+            port=values.get("INTERVIEW_DATABASE_PORT", ""),
+            path=f'/{values.get("INTERVIEW_DATABASE_DB","")}',
         )
 
 
