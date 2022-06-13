@@ -60,7 +60,7 @@ async def post_sku(
 
 @sku_router.get("/sku", response_model=List[SKUSchema])
 async def get_sku(session: AsyncSession = Depends(get_session)):
-    skus_result = await session.execute(select(SKU))
+    skus_result = await session.execute(select(SKU).where(SKU.disabled == None))
     skus = skus_result.scalars().all()
     return skus
 
