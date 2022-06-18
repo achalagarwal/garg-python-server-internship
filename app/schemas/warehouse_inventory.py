@@ -32,8 +32,8 @@ class WarehouseInventory(WarehouseInventoryCreate):
     id: UUID4
 
 class WarehouseInventoryPick(BaseModel):
-    row: Union[int,str]
-    column: Union[int, str]
+    row: Union[int, Literal[None]]
+    column: Union[int, Literal[None]]
     sku_variant_id: Union[UUID4, Literal[None]]
     sku_id: UUID4
     quantity: int

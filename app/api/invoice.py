@@ -2,6 +2,7 @@
 from collections import defaultdict
 from datetime import datetime
 import enum
+from functools import cmp_to_key
 from re import sub
 from typing import Any, List, Tuple, Union
 from urllib.error import HTTPError
@@ -19,7 +20,7 @@ from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, 
 from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, over
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 invoice_router = APIRouter()
 client = AsyncClient(base_url="http://localhost:8000/")
@@ -206,8 +207,8 @@ async def post_invoice(
     for sku_id, quantity in sku_quantity_remaining_map.items(): 
         sorted_warehouse_inventory_picks.append((None,
             WarehouseInventoryPick(
-                row="-",
-                column="-",
+                row=None,
+                column=None,
                 sku_id=sku_id,
                 sku_variant_id=None,
                 quantity=quantity
@@ -220,6 +221,7 @@ async def post_invoice(
 
     warehouse_invoice = WarehouseInvoice(
         id=uuid.uuid4(),
+        status=InvoiceStatus.PENDING,
         parent_invoice_id=invoice.id,
         warehouse_id=warehouse_id,
         warehouse_inventories=list(
@@ -312,18 +314,12 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
     #  TODO: Debug the above query and combine both queries into one
 
     
-    warehouse_invoices_query = select(WarehouseInvoice, Invoice).options(joinedload(WarehouseInvoice.parent_invoice)).join(
-            Invoice,
-            Invoice.id == WarehouseInvoice.parent_invoice_id
-            ).where(
-                or_(Invoice.status == InvoiceStatus.PENDING, Invoice.status == InvoiceStatus.PICKING, Invoice.status == InvoiceStatus.READY_FOR_TRANSIT),
+    warehouse_invoices_query = select(WarehouseInvoice).options(joinedload(WarehouseInvoice.parent_invoice)).where(
                 WarehouseInvoice.warehouse_id == warehouse_id,
                 or_(WarehouseInvoice.status == InvoiceStatus.PENDING, WarehouseInvoice.status == InvoiceStatus.PICKING, WarehouseInvoice.status == InvoiceStatus.IN_TRANSIT, WarehouseInvoice.status == InvoiceStatus.READY_FOR_TRANSIT)
             ).order_by(WarehouseInvoice.created_at).offset(page*page_size).limit(page_size)
 
     if last_updated_timestamp:
-        print(last_updated_timestamp)
-        print(datetime.strptime(last_updated_timestamp))
         
         warehouse_invoices_query = warehouse_invoices_query.where(
             WarehouseInvoice.updated_at > datetime.strptime(last_updated_timestamp),
@@ -355,7 +351,7 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
     warehouse_inventories = warehouse_inventories_result.all()
     warehouse_inventories_map = { warehouse_inventory[0]:warehouse_inventory for warehouse_inventory in warehouse_inventories}
 
-    warehouse_invoices_response = {"last_updated_at": response_updated_timestamp, "invoices": []}
+    warehouse_invoices_response: dict = {"last_updated_at": response_updated_timestamp, "invoices": []}
     for warehouse_invoice in warehouse_invoices:
         warehouse_invoice_response = WarehouseInvoiceSchema(
             company=warehouse_invoice.parent_invoice.company,
@@ -374,8 +370,8 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
                 ) for i in range(len(warehouse_invoice.skus)) if warehouse_invoice.warehouse_inventories[i]
             ] + [
                     WarehouseInventoryPick(
-                            row="-",
-                            column="-",
+                            row=None,
+                            column=None,
                             sku_id=warehouse_invoice.skus[i],
                             sku_variant_id=None,
                             quantity=warehouse_invoice.quantities[i]
@@ -384,6 +380,12 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
         )
         warehouse_invoices_response["invoices"].append(warehouse_invoice_response)
 
+    def _cmp(a: WarehouseInvoiceResponse, b: WarehouseInvoiceResponse):
+        if (a.status == InvoiceStatus.READY_FOR_TRANSIT):
+            return 1
+        return -1
+    
+    warehouse_invoices_response["invoices"].sort(key=cmp_to_key(_cmp))
     return warehouse_invoices_response
 
 
@@ -392,6 +394,7 @@ async def post_warehouse_invoice_details(
     warehouse_invoice_details: WarehouseInvoiceDetailsSchema,
     session: AsyncSession = Depends(get_session)
 ):
+
     warehouse_invoice = await session.execute(
         select(WarehouseInvoice).where(
             WarehouseInvoice.id == warehouse_invoice_details.warehouse_invoice_id
@@ -455,12 +458,26 @@ async def post_warehouse_invoice_details(
             else:
                 updates_are_matching = False
                 break
-            
+                
+    sorted_time_per_item = sorted([(index, time) for index, time in enumerate(warehouse_invoice_details.time_per_item)], key=lambda x: x[1])
+    
+    actual_time = [0 for _ in range(len(sorted_time_per_item))]
+
+    prev_item_time = None
+    for index, time in sorted_time_per_item:
+        if prev_item_time is None:
+            actual_time[index] = 0
+        else:
+            actual_time[index] = ((time - prev_item_time) / 1000)
+        prev_item_time = time
+    
     warehouse_invoice_details_object = WarehouseInvoiceDetails(
         id= uuid.uuid4(),
         warehouse_invoice_id = warehouse_invoice_details.warehouse_invoice_id,
-        time_per_item = warehouse_invoice_details.time_per_item
+        time_per_item = actual_time
     )
+
+    
 
     if not updates_are_matching:
         warehouse_invoice_details_object.columns = list(map(lambda x: x["column"], actual_updates))

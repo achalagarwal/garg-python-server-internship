@@ -40,7 +40,6 @@ async def get_sku_variants(sku_id: str, warehouse_id: UUID, session: AsyncSessio
     
     inventory_result = await session.execute(query)
     inventory: List[WarehouseInventory] = inventory_result.scalars().all()
-
     sorted_sku_variants = sorted(sku_variants, key=lambda x: x.created_at)
     sorted_sku_variants_index_map = {sku_variant.id: i for i, sku_variant in enumerate(sorted_sku_variants)}
 

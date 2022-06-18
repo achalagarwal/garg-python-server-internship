@@ -118,7 +118,7 @@ async def move_warehouse_inventory(
             target_inventory.projected_quantities = list(target_inventory.projected_quantities)
             target_inventory.quantities = list(target_inventory.quantities)
 
-    session.commit()
+    await session.commit()
 
     return None
 
@@ -127,7 +127,7 @@ async def post_warehouse_inventory(
     warehouse_inventory: WarehouseInventoryCreate,
     session: AsyncSession = Depends(get_session)
 ):
-    
+    print(warehouse_inventory.__dict__) 
     # TODO: Disable removing SKU variants
     new_sku_variant = getattr(warehouse_inventory, "new_sku_variant")
     if new_sku_variant:

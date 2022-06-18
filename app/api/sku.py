@@ -11,11 +11,12 @@ from httpx import AsyncClient
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.core import security
 from app.schemas import SKU as SKUSchema, SKUCreate, SKUInvoice, SKUPatch
-from app.schemas.sku import SKUGetResponse
+from app.schemas.sku import SKUGetResponse, SKUProjectedRequest
 from app.tests import utils
-from app.models import SKU 
+from app.models import SKU, WarehouseInventory 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from thefuzz import process
 
@@ -73,6 +74,41 @@ async def get_skus(session: AsyncSession = Depends(get_session)):
     last_updated_at = max(skus, key=lambda x: x.updated_at, default=None).updated_at
     skus_response = {sku.id: sku for sku in skus}
     return {"skus": skus_response, "last_updated_at": last_updated_at}
+
+
+@sku_router.post("/sku/projected_match")
+async def initialize_sku_projected_quantities(
+    skuProjectionRequest: SKUProjectedRequest,
+    session: AsyncSession = Depends(get_session)
+):
+
+    sku_id = skuProjectionRequest.sku_id
+    sku_result = await session.execute(select(SKU).options(joinedload(SKU.sku_variants)).where(SKU.id == sku_id))
+    sku = sku_result.unique().scalar_one()
+
+    sku_variant_ids = list(map(lambda sku_variant: sku_variant.id, sku.sku_variants))
+
+    sku_variant_id_set = set(sku_variant_ids)
+
+    # TODO: Filter by Warehouse ID
+    inventories_result = await session.execute(select(WarehouseInventory).where(
+        WarehouseInventory.sku_variants.op('&&')(sku_variant_ids)
+    ))
+
+    inventories = inventories_result.scalars().all()
+
+    for inventory in inventories:
+
+        projected_quantities = list(inventory.projected_quantities)
+        for i, inventory_sku_variant_id in enumerate(inventory.sku_variants):
+            if inventory_sku_variant_id in sku_variant_id_set:
+                projected_quantities[i] = inventory.quantities[i]
+        inventory.projected_quantities = projected_quantities
+    
+    await session.commit()
+
+    return
+
 
 @sku_router.get("/sku/search", response_model=List[SKUInvoice])
 async def search_sku(

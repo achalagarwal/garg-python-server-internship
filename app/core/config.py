@@ -24,6 +24,7 @@ from typing import Literal, Union
 
 import toml
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, validator
+import urllib.parse
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
 PYPROJECT_CONTENT = toml.load(f"{PROJECT_DIR}/pyproject.toml")["tool"]["poetry"]
@@ -84,7 +85,7 @@ class Settings(BaseSettings):
         return AnyUrl.build(
             scheme="postgresql+asyncpg",
             user=values["DEFAULT_DATABASE_USER"],
-            password=values["DEFAULT_DATABASE_PASSWORD"],
+            password=urllib.parse.quote_plus(values["DEFAULT_DATABASE_PASSWORD"]),
             host=values["DEFAULT_DATABASE_HOSTNAME"],
             port=values["DEFAULT_DATABASE_PORT"],
             path=f"/{values['DEFAULT_DATABASE_DB']}",
