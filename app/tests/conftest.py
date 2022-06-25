@@ -5,7 +5,8 @@ import pytest
 from fastapi_users.password import PasswordHelper
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy import text, inspect
 from app.core import config
 from app.main import app
 from app.models import Base
@@ -43,13 +44,58 @@ async def test_db_setup_sessionmaker():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        # TODO: Create a template database T0 which is a copy of the current database
     return async_session
-
 
 @pytest.fixture
 async def session(test_db_setup_sessionmaker) -> AsyncGenerator[AsyncSession, None]:
+
+    def fn(conn):
+        insp = inspect(conn)
+        tables = insp.get_table_names()
+        import pdb; pdb.set_trace()
+        query = text("SET session_replication_role = 'replica';")
+        # {}; SET session_replication_role = 'replica';".format(
+        #         ";TRUNCATE TABLE " + ",".join(
+        #             ["public.user" if table == "user" else table for table in tables]
+        #         )
+        # )
+        print(query)
+        conn.execute(query)
+        query = text(
+            "TRUNCATE TABLE " + ",".join(
+                ["public.user" if table == "user" else table for table in tables]
+            ) + ";"
+        )
+        # conn.execute(query)
+        query = text("SET session_replication_role = 'origin';")
+        conn.execute(query)
+        print("DOne")
+
     async with test_db_setup_sessionmaker() as session:
         yield session
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(fn)
+        # table_names = await inspector.get_table_names()
+        # print(table_names)
+        
+            # await async_connection.execute(text("SET session_replication_role = 'replica';{}; SET session_replication_role = 'replica';".format(
+            #     ";".join(
+            #         [
+            #             text("TRUNCATE {table}") for 
+            #         ]
+            #     )
+            # )))
+    # CLOSE ENGINE CONNECTION
+    # DROP DATABASE
+    # CREATE DATABASE FROM TEMPLATE T0
+    # START ENGINE CONNECTION
+
+    # ALTERNATIVELY
+    # SET REPLICA MODE
+    # TRUNCATE ALL TABLES
+    # UNSET REPLICA MODE
 
 
 @pytest.fixture
@@ -62,3 +108,20 @@ async def superuser_user(session: AsyncSession):
     return await utils.create_db_user(
         superuser_user_email, superuser_user_hash, session, is_superuser=True
     )
+
+
+from typing import Any
+from typing import Generator
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
+#this is to include backend dir in sys.path so that we can import from db,main.py
+
+
