@@ -24,6 +24,7 @@ sku_variant_router = APIRouter()
 
 client = AsyncClient(base_url="http://localhost:8000/")
 
+# TODO: Set a response model and remove extra fields like "parent_sku_id" from the response
 @sku_variant_router.get("/api/sku_variant", response_model=Dict)
 async def get_sku_variants(sku_id: str, warehouse_id: UUID, session: AsyncSession = Depends(get_session)):
 

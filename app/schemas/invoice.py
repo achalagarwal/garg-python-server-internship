@@ -12,6 +12,7 @@ class Status(str, Enum):
     READY_FOR_TRANSIT = "READY_FOR_TRANSIT"
     IN_TRANSIT = 'IN_TRANSIT'
     DELIVERED = 'DELIVERED'
+    CANCELLED = 'CANCELLED'
 
 class InvoiceCreate(BaseModel):   
     # to be updated when we have the company model

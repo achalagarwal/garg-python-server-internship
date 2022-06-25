@@ -4,9 +4,10 @@ from datetime import datetime
 import enum
 from functools import cmp_to_key
 from re import sub
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Literal, Tuple, Union
 from urllib.error import HTTPError
 import uuid
+from pydantic import UUID4
 from fastapi import APIRouter, Depends, Form, status, HTTPException
 from fastapi.responses import RedirectResponse
 
@@ -16,15 +17,84 @@ from app.api.deps import fastapi_users, get_session, get_current_user
 from app.schemas import Invoice as InvoiceSchema, UserDB, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
 from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails
 from app.schemas import invoice
+from app.schemas import warehouse_inventory
 from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, WarehouseInvoiceResponse, WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
 from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func, over
+from sqlalchemy import select, or_, func, over, any_
 from sqlalchemy.orm import joinedload, selectinload
+
+from app.utils import index_with_default
 
 invoice_router = APIRouter()
 client = AsyncClient(base_url="http://localhost:8000/")
 
+@invoice_router.delete("/invoice", response_model=Literal[None])
+async def delete_invoice(
+    force_delete: bool,
+    invoice_id: UUID4,
+    session: AsyncSession = Depends(get_session)
+):
+    invoice_query = select(Invoice).options(joinedload(Invoice.warehouse_invoices)).where(Invoice.id == invoice_id)
+    
+    invoice_result = await session.execute(invoice_query)
+    invoice: Invoice = invoice_result.unique().scalar_one()
+
+    warehouse_invoice: WarehouseInvoice
+    warehouse_inventories_to_fetch = []
+
+    for warehouse_invoice in invoice.warehouse_invoices:
+
+        if warehouse_invoice.status in {InvoiceStatus.PICKING, InvoiceStatus.READY_FOR_TRANSIT, InvoiceStatus.IN_TRANSIT}:
+            # override via force_delete flag for PICKING and READY_FOR_TRANSIT
+            raise HTTPException()
+        
+        # TODO: Use an is_cancelled boolean flag instead
+        warehouse_invoice.status = InvoiceStatus.CANCELLED
+        warehouse_inventories_to_fetch.extend(warehouse_invoice.warehouse_inventories)
+        
+
+    warehouse_inventories_result = session.execute(select(WarehouseInventory).where(WarehouseInventory.id.in_(warehouse_inventories_to_fetch)))
+    warehouse_inventories = warehouse_inventories_result.scalars().all()
+    warehouse_inventory_id_map = {warehouse_inventory.id: warehouse_inventory for warehouse_inventory in warehouse_inventories}
+    
+    for warehouse_invoice in invoice.warehouse_invoices:
+        warehouse_invoice.quantities
+        warehouse_invoice.sku_variants
+        warehouse_invoice.warehouse_inventories
+        for i, warehouse_inventory_id in enumerate(warehouse_invoice.warehouse_inventories):
+            quantity = warehouse_invoice.quantities[i]
+            sku_variant = warehouse_invoice.sku_variants[i]
+            if sku_variant is None:
+                continue
+            warehouse_inventory: WarehouseInventory = warehouse_inventory_id_map[warehouse_inventory_id]
+            index_in_warehouse_inventory = index_with_default(warehouse_inventory.sku_variants, sku_variant)
+            if index_in_warehouse_inventory is None:
+                # Add the SKU Variant again
+                # Potential Issue: There is no more space in the location
+                # and the items need to be added somewhere else
+
+                # TODO: Make sure that the mobile app supports readding these items back correctly (instead of creating a new SKU Variant)
+                new_sku_variants = list(warehouse_inventory.sku_variants)
+                new_quantities = list(warehouse_inventory.quantities)
+                new_projected_quantities = list(warehouse_inventory.projected_quantities)
+
+                new_sku_variants.append(sku_variant)
+                new_quantities.append(0)
+                new_projected_quantities.append(quantity)
+
+                warehouse_inventory.projected_quantities = new_projected_quantities
+                warehouse_inventory.quantities = new_quantities
+                warehouse_inventory.sku_variants = new_sku_variants
+
+            else:
+                warehouse_inventory.projected_quantities[index_in_warehouse_inventory] += quantity
+    
+    invoice.status = InvoiceStatus.CANCELLED
+
+    await session.commit()
+
+    return
 
 @invoice_router.post("/invoice", response_model=InvoiceSchema)
 async def post_invoice(
@@ -49,7 +119,9 @@ async def post_invoice(
     if len(invoice.items) == 0:
         raise HTTPException(status_code=422, detail=[{"loc": ["Items"] , "msg": "missing"}])
 
-    sku_variants_query = select(SKUVariant).where(SKUVariant.parent_sku_id.in_(invoice.items)).order_by(SKUVariant.created_at)
+    # TODO: Add a total_quantity_across_locations field in SKU_Variant
+    # it might be faster than the following query
+    sku_variants_query = select(SKUVariant).where(SKUVariant.parent_sku_id.in_(invoice.items), SKUVariant.id == any_(WarehouseInventory.sku_variants)).order_by(SKUVariant.created_at)
     # fetch all locations for FIFO sku variant
     # if necessary split an invoice row into two (for multiple locations)
     # for index, sku_id in enumerate(invoice.items):
@@ -105,15 +177,14 @@ async def post_invoice(
                     )
                 )
                 sku_quantity_remaining_map[parent_sku_id] -= take_from_inventory
-    
-        
+
     sku_quantity_remaining_map = dict(filter(lambda x: x[1] > 0, sku_quantity_remaining_map.items()))
     
     # we split / perform another query because the number of warehouse inventories can be very large for a given list of skus
     # TODO: start with the next two newer sku variants and then next 4
     next_sku_variant_ids = []
     for sublist in [sku_variants_map[sku_id][1:-1] for sku_id in sku_quantity_remaining_map]:
-        next_sku_variant_ids.extend(sublist)
+        next_sku_variant_ids.extend([ sku_variant.id for sku_variant in sublist])
     
     # TODO: use best warehouse_id from above
     warehouse_inventories_query = select(WarehouseInventory).with_for_update().where(WarehouseInventory.sku_variants.op('&&')(next_sku_variant_ids))
@@ -166,7 +237,7 @@ async def post_invoice(
             await session.rollback()
             # TODO: return the items that caused the error
             # TODO: move this earlier in the flow
-            raise HTTPException(status_code=422, detail=[{"loc": [str(sku_id)[0:6] + "..." + " Quantity: " + str(quantity) for sku_id, quantity in sku_quantity_remaining_map.items()] , "msg": "unavailable in warehouse"}] )
+            raise HTTPException(status_code=422, detail={"message": "Items missing", "data": [(str(sku_id), quantity) for sku_id, quantity in sku_quantity_remaining_map.items()]} )
 
     # The sort should be S-shaped
     ## First sort rows
@@ -298,7 +369,7 @@ async def patch_invoice(
     return
 
 @invoice_router.get("/api/warehouse_invoice", response_model=WarehouseInvoiceResponse)
-async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size:int = 25, last_updated_timestamp:Union[str, None] = None, session: AsyncSession = Depends(get_session)):
+async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size:int = 50, last_updated_timestamp:Union[str, None] = None, session: AsyncSession = Depends(get_session)):
     # warehouse_invoices_query = select(WarehouseInvoice).join(
     #         Invoice,
     #         Invoice.id == WarehouseInvoice.parent_invoice_id
@@ -329,7 +400,6 @@ async def get_pending_invoices(warehouse_id: uuid.UUID, page: int = 0, page_size
     warehouse_invoices_result = await session.execute(warehouse_invoices_query)
 
     warehouse_invoices: List[WarehouseInvoice] = warehouse_invoices_result.scalars().all()
-    
 
     # TODO: Fix, this will crash when there are no invoices
     response_updated_timestamp = warehouse_invoices[0].updated_at
