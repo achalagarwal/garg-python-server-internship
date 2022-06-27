@@ -61,13 +61,13 @@ class Settings(BaseSettings):
     TEST_DATABASE_DB: str = "test_db"
     TEST_SQLALCHEMY_DATABASE_URI: str = ""
 
-    # POSTGRESQL DEFAULT DATABASE
-    INTERVIEW_DATABASE_HOSTNAME: str
-    INTERVIEW_DATABASE_USER: str
-    INTERVIEW_DATABASE_PASSWORD: str
-    INTERVIEW_DATABASE_PORT: str
-    INTERVIEW_DATABASE_DB: str
-    INTERVIEW_SQLALCHEMY_DATABASE_URI: str = ""
+    # POSTGRESQL DEV DATABASE
+    DEV_DATABASE_HOSTNAME: str
+    DEV_DATABASE_USER: str
+    DEV_DATABASE_PASSWORD: str
+    DEV_DATABASE_PORT: str
+    DEV_DATABASE_DB: str
+    DEV_SQLALCHEMY_DATABASE_URI: str = ""
 
     # FIRST SUPERUSER
     FIRST_SUPERUSER_EMAIL: EmailStr
@@ -102,15 +102,15 @@ class Settings(BaseSettings):
             path=f"/{values['TEST_DATABASE_DB']}",
         )
 
-    @validator("INTERVIEW_SQLALCHEMY_DATABASE_URI")
-    def _assemble_interview_db_connection(cls, v: str, values: dict[str, str]) -> str:
+    @validator("DEV_SQLALCHEMY_DATABASE_URI")
+    def _assemble_dev_db_connection(cls, v: str, values: dict[str, str]) -> str:
         return AnyUrl.build(
             scheme="postgresql+asyncpg",
-            user=values.get("INTERVIEW_DATABASE_USER", ""),
-            password=values.get("INTERVIEW_DATABASE_PASSWORD", ""),
-            host=values.get("INTERVIEW_DATABASE_HOSTNAME",""),
-            port=values.get("INTERVIEW_DATABASE_PORT", ""),
-            path=f'/{values.get("INTERVIEW_DATABASE_DB","")}',
+            user=values.get("DEV_DATABASE_USER", ""),
+            password=values.get("DEV_DATABASE_PASSWORD", ""),
+            host=values.get("DEV_DATABASE_HOSTNAME",""),
+            port=values.get("DEV_DATABASE_PORT", ""),
+            path=f'/{values.get("DEV_DATABASE_DB","")}',
         )
 
 
