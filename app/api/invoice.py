@@ -137,9 +137,9 @@ async def post_invoice(
     sku_variants_map = defaultdict(lambda: [])
 
     for sku_variant in sku_variants:
-        sku_variants_map[sku_variant.parent_sku_id].append(sku_variant)
+        sku_variants_map[sku_variant.parent_sku_id].append(sku_variant.id)
  
-    oldest_sku_variant_ids = set(sku_variants_list[0].id for _, sku_variants_list in sku_variants_map.items())
+    oldest_sku_variant_ids = set(sku_variants_list[0] for _, sku_variants_list in sku_variants_map.items())
 
     # TODO: detect best warehouse_id depending on availability of items and destination address
     warehouse_inventories_query = select(WarehouseInventory).where(WarehouseInventory.sku_variants.op('&&')(oldest_sku_variant_ids))
@@ -179,12 +179,11 @@ async def post_invoice(
                 sku_quantity_remaining_map[parent_sku_id] -= take_from_inventory
 
     sku_quantity_remaining_map = dict(filter(lambda x: x[1] > 0, sku_quantity_remaining_map.items()))
-    
     # we split / perform another query because the number of warehouse inventories can be very large for a given list of skus
     # TODO: start with the next two newer sku variants and then next 4
     next_sku_variant_ids = []
-    for sublist in [sku_variants_map[sku_id][1:-1] for sku_id in sku_quantity_remaining_map]:
-        next_sku_variant_ids.extend([ sku_variant.id for sku_variant in sublist])
+    for sublist in [sku_variants_map[sku_id][1:] for sku_id in sku_quantity_remaining_map]:
+        next_sku_variant_ids.extend(sublist)
     
     # TODO: use best warehouse_id from above
     warehouse_inventories_query = select(WarehouseInventory).with_for_update().where(WarehouseInventory.sku_variants.op('&&')(next_sku_variant_ids))
@@ -202,15 +201,15 @@ async def post_invoice(
     # Because the warehouse can be BIGGG
 
     for sku_id, quantity_remaining in sku_quantity_remaining_map.items():
-        # 1:-1 because we have already consumed 0 above
-        sku_variant_ids = sku_variants_map[sku_id][1:-1]
+        # 1: because we have already consumed 0 above
+        sku_variant_ids = sku_variants_map[sku_id][1:]
         for sku_variant_id in sku_variant_ids:
             if quantity_remaining == 0:
                 break
             for warehouse_inventory, index in sku_variant_to_warehouse_inventories_and_index[sku_variant_id]:
                 if quantity_remaining == 0:
                     break
-                quantity_in_inventory = warehouse_inventory.project_quantities[index]
+                quantity_in_inventory = warehouse_inventory.projected_quantities[index]
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
                 new_projected_quantities = list(warehouse_inventory.projected_quantities)
                 new_projected_quantities[index] -= take_from_inventory
@@ -331,7 +330,7 @@ async def post_invoice(
 async def get_pending_invoices(page: int = 0, page_size:int = 25, session: AsyncSession = Depends(get_session)):
     invoices_result = await session.execute(select(Invoice).where(
             or_(Invoice.status == InvoiceStatus.PENDING, Invoice.status == InvoiceStatus.PICKING)
-        ).order_by(Invoice.created_date).offset(page*page_size).limit(page_size)
+        ).order_by(Invoice.created_at).offset(page*page_size).limit(page_size)
     )
     invoices = invoices_result.scalars().all()
     invoices_result = []
