@@ -15,7 +15,7 @@ from httpx import AsyncClient
 
 from app.api.deps import fastapi_users, get_session, get_current_user
 from app.schemas import Invoice as InvoiceSchema, UserDB, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
-from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails
+from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails, Warehouse
 from app.schemas import invoice
 from app.schemas import warehouse_inventory
 from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, WarehouseInvoiceResponse, WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
@@ -54,7 +54,7 @@ async def delete_invoice(
         warehouse_inventories_to_fetch.extend(warehouse_invoice.warehouse_inventories)
         
 
-    warehouse_inventories_result = session.execute(select(WarehouseInventory).where(WarehouseInventory.id.in_(warehouse_inventories_to_fetch)))
+    warehouse_inventories_result = await session.execute(select(WarehouseInventory).where(WarehouseInventory.id.in_(warehouse_inventories_to_fetch)))
     warehouse_inventories = warehouse_inventories_result.scalars().all()
     warehouse_inventory_id_map = {warehouse_inventory.id: warehouse_inventory for warehouse_inventory in warehouse_inventories}
     
@@ -69,6 +69,9 @@ async def delete_invoice(
                 continue
             warehouse_inventory: WarehouseInventory = warehouse_inventory_id_map[warehouse_inventory_id]
             index_in_warehouse_inventory = index_with_default(warehouse_inventory.sku_variants, sku_variant)
+
+           
+
             if index_in_warehouse_inventory is None:
                 # Add the SKU Variant again
                 # Potential Issue: There is no more space in the location
@@ -88,8 +91,9 @@ async def delete_invoice(
                 warehouse_inventory.sku_variants = new_sku_variants
 
             else:
-                warehouse_inventory.projected_quantities[index_in_warehouse_inventory] += quantity
-    
+                new_projected_quantities = list(warehouse_inventory.projected_quantities)
+                new_projected_quantities[index_in_warehouse_inventory] += quantity
+                warehouse_inventory.projected_quantities = new_projected_quantities
     invoice.status = InvoiceStatus.CANCELLED
 
     await session.commit()
@@ -108,7 +112,7 @@ async def post_invoice(
     # Then set invoice.status = PENDING_CREATION; return response
     # Add a background task to convert PENDING_CREATION to PENDING_WAREHOUSE
 
-    invoice_dict = invoice_data.dict(skip_defaults=True)
+    invoice_dict = invoice_data.dict(exclude_unset=True)
     invoice_dict["id"] = uuid.uuid4()
     invoice_dict["status"] = InvoiceStatus.PENDING.value
     invoice = Invoice(**invoice_dict)
@@ -161,6 +165,8 @@ async def post_invoice(
             if quantity_remaining > 0:
                 quantity_in_inventory = warehouse_inventory.projected_quantities[index]
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
+                if take_from_inventory == 0:
+                    continue
                 new_projected_quantities = list(warehouse_inventory.projected_quantities)
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
@@ -211,6 +217,8 @@ async def post_invoice(
                     break
                 quantity_in_inventory = warehouse_inventory.projected_quantities[index]
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
+                if take_from_inventory == 0:
+                    continue
                 new_projected_quantities = list(warehouse_inventory.projected_quantities)
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
@@ -285,9 +293,10 @@ async def post_invoice(
             ))
         )
 
-    # TODO: Create new Warehouse Invoice(s) row in db
-    # TODO: Decide warehouse id instead of hardcoding
-    warehouse_id = "e9d50f10-dd96-41ec-a2f0-73fa62042982"
+    # TODO: Smart decision of warehouse id based on SKUs, company, and destination
+    warehouse_result = await session.execute(select(Warehouse).limit(1))
+    warehouse = warehouse_result.scalar_one()
+    warehouse_id = warehouse.id
 
     warehouse_invoice = WarehouseInvoice(
         id=uuid.uuid4(),

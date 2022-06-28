@@ -1,46 +1,13 @@
-"""
-Testing FastAPI Users makes no sense, its just an example to remove.
-"""
-
-from datetime import datetime
+from app.schemas.invoice import Status as InvoiceStatus, InvoiceCreate
+from app.models import WarehouseInvoice, Invoice, Warehouse, SKU, SKUVariant, WarehouseInventory
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from httpx import AsyncClient
+from datetime import datetime, timedelta
 from typing import List
 import uuid
 import pytest
-from httpx import AsyncClient
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas import UserDB
-from app.schemas.invoice import Status as InvoiceStatus, InvoiceCreate
-from app.models import WarehouseInvoice, Invoice, Warehouse, SKU, SKUVariant, WarehouseInventory
-
-# All test coroutines in file will be treated as marked (async allowed).
 pytestmark = pytest.mark.asyncio
-
-
-async def test_login_endpoints(client: AsyncClient, default_user: UserDB):
-
-    # access-token endpoint
-    access_token_res = await client.post(
-        "/auth/jwt/login",
-        data={
-            "username": "garg@garghouse.co.in",
-            "password": "garg",
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    assert access_token_res.status_code == 200
-    token = access_token_res.json()
-
-    access_token = token["access_token"]
-
-    # test-token endpoint
-    test_token = await client.get(
-        "/users/me", headers={"Authorization": f"Bearer {access_token}"}
-    )
-    assert test_token.status_code == 200
-    response_user = test_token.json()
-    assert response_user["email"] == default_user.email
 
 
 async def test_get_warehouse_invoice_sends_pending_invoices(client: AsyncClient, session: AsyncSession):
@@ -214,3 +181,91 @@ async def test_deleting_invoice_resets_warehouse_inventory(client: AsyncClient, 
     
     # `sorted` to make sure that the equality check is agnostic of the initial order
     assert sorted(projected_quantities_after_deleting_all_invoices) == sorted(initial_projected_quantities)
+
+
+async def test_create_invoice_picks_oldest_sku_variants(client: AsyncClient, session: AsyncSession):
+
+    async def create_sku_inventory(session: AsyncSession):
+        warehouse = Warehouse(id=uuid.uuid4(), display_name="Warehouse")
+        session.add(warehouse)
+
+        sku = SKU(id=uuid.uuid4(), title="TestSKU1", quantity_unit="test", company="TestCompany")
+
+        session.add(sku)
+        await session.flush()
+
+        sku_variant_newest = SKUVariant(id=uuid.uuid4(), parent_sku_id=sku.id, created_at=datetime.utcnow())
+        sku_variant_oldest = SKUVariant(id=uuid.uuid4(), parent_sku_id=sku.id, created_at=datetime.utcnow() - timedelta(days=3))
+        sku_variant_old = SKUVariant(id=uuid.uuid4(), parent_sku_id=sku.id, created_at=datetime.utcnow() - timedelta(days=2))
+        sku_variant_new = SKUVariant(id=uuid.uuid4(), parent_sku_id=sku.id, created_at=datetime.utcnow() - timedelta(days=1))
+
+        session.add_all([sku_variant_newest, sku_variant_oldest, sku_variant_old, sku_variant_new])
+
+        warehouse_inventory_1 = WarehouseInventory(
+            id=uuid.uuid4(),
+            row=1,
+            column=1,
+            warehouse_id=warehouse.id,
+            sku_variants=[
+                sku_variant_newest.id,
+                sku_variant_oldest.id,
+                sku_variant_old.id,
+                sku_variant_new.id
+            ],
+            quantities=[100,100,100,100],
+            projected_quantities=[100,100,100,100]
+        )
+        
+        warehouse_inventory_2 = WarehouseInventory(
+            id=uuid.uuid4(),
+            row=2,
+            column=2,
+            warehouse_id=warehouse.id,
+            sku_variants=[
+                sku_variant_newest.id,
+                sku_variant_oldest.id,
+                sku_variant_old.id,
+                sku_variant_new.id
+            ],
+            quantities=[100,100,100,100],
+            projected_quantities=[100,100,100,100]
+        )
+
+        session.add_all([warehouse_inventory_1, warehouse_inventory_2])
+        await session.commit()
+
+    await create_sku_inventory(session=session)
+
+    sku_variants_result = await session.execute(select(SKUVariant))
+    sku_variants = sku_variants_result.scalars().all()
+
+    sku_variants_sorted = sorted(sku_variants, key=lambda x: x.created_at)
+    
+    skus_result = await session.execute(select(SKU))
+    skus = skus_result.scalars().all()
+
+    assert len(skus) == 1
+
+    invoice_items = [str(skus[0].id)] 
+    invoice_quantities = [250]
+
+    create_invoice_response = await client.post(f"/invoice?force_create={False}",  json={
+        "company":"TestCompany", "items":invoice_items, "quantities":invoice_quantities, "invoice_id":"TestInvoice1",
+    })
+    assert create_invoice_response.status_code == 200
+
+    await session.commit()
+
+    warehouse_invoices_result = await session.execute(select(WarehouseInvoice))
+    warehouse_invoices = warehouse_invoices_result.scalars().all()
+
+    assert len(warehouse_invoices) == 1
+    warehouse_invoice: WarehouseInvoice = warehouse_invoices[0]
+
+    for i, sku_variant_id in enumerate(warehouse_invoice.sku_variants):
+        if sku_variant_id == sku_variants_sorted[1].id:
+            assert warehouse_invoice.quantities[i] == 50
+        elif sku_variant_id == sku_variants_sorted[0].id:
+            assert warehouse_invoice.quantities[i] == 100
+        else:
+            raise ValueError("We shouldn't get any other sku variant in this invoice")

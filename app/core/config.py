@@ -20,7 +20,7 @@ See https://pydantic-docs.helpmanual.io/usage/settings/
 """
 
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import toml
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, validator
@@ -33,7 +33,7 @@ PYPROJECT_CONTENT = toml.load(f"{PROJECT_DIR}/pyproject.toml")["tool"]["poetry"]
 class Settings(BaseSettings):
     # CORE SETTINGS
     SECRET_KEY: str
-    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "PRODUCTION", "INTERVIEW"]
+    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "PRODUCTION", "DEV"]
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     BACKEND_CORS_ORIGINS: Union[str, list[AnyHttpUrl]]
 
@@ -43,31 +43,24 @@ class Settings(BaseSettings):
     DESCRIPTION: str = PYPROJECT_CONTENT["description"]
 
     # FILE STORE PATH
-    FILE_STORE: str
+    FILE_STORE: Optional[str]
 
-    # POSTGRESQL DEFAULT DATABASE
-    DEFAULT_DATABASE_HOSTNAME: str
-    DEFAULT_DATABASE_USER: str
-    DEFAULT_DATABASE_PASSWORD: str
-    DEFAULT_DATABASE_PORT: str
-    DEFAULT_DATABASE_DB: str
-    DEFAULT_SQLALCHEMY_DATABASE_URI: str = ""
 
     # POSTGRESQL TEST DATABASE
-    TEST_DATABASE_HOSTNAME: str = "localhost"
-    TEST_DATABASE_USER: str = "test_user"
-    TEST_DATABASE_PASSWORD: str = "test_password"
-    TEST_DATABASE_PORT: str = "5432"
-    TEST_DATABASE_DB: str = "test_db"
+    TEST_DATABASE_HOSTNAME: str
+    TEST_DATABASE_USER: str
+    TEST_DATABASE_PASSWORD: str
+    TEST_DATABASE_PORT: str
+    TEST_DATABASE_DB: str
     TEST_SQLALCHEMY_DATABASE_URI: str = ""
 
-    # POSTGRESQL DEFAULT DATABASE
-    INTERVIEW_DATABASE_HOSTNAME: str
-    INTERVIEW_DATABASE_USER: str
-    INTERVIEW_DATABASE_PASSWORD: str
-    INTERVIEW_DATABASE_PORT: str
-    INTERVIEW_DATABASE_DB: str
-    INTERVIEW_SQLALCHEMY_DATABASE_URI: str = ""
+    # POSTGRESQL DEV DATABASE
+    DEV_DATABASE_HOSTNAME: str
+    DEV_DATABASE_USER: str
+    DEV_DATABASE_PASSWORD: str
+    DEV_DATABASE_PORT: str
+    DEV_DATABASE_DB: str
+    DEV_SQLALCHEMY_DATABASE_URI: str = ""
 
     # FIRST SUPERUSER
     FIRST_SUPERUSER_EMAIL: EmailStr
@@ -80,17 +73,6 @@ class Settings(BaseSettings):
             return [item.strip() for item in cors_origins.split(",")]
         return cors_origins
 
-    @validator("DEFAULT_SQLALCHEMY_DATABASE_URI")
-    def _assemble_default_db_connection(cls, v: str, values: dict[str, str]) -> str:
-        return AnyUrl.build(
-            scheme="postgresql+asyncpg",
-            user=values["DEFAULT_DATABASE_USER"],
-            password=urllib.parse.quote_plus(values["DEFAULT_DATABASE_PASSWORD"]),
-            host=values["DEFAULT_DATABASE_HOSTNAME"],
-            port=values["DEFAULT_DATABASE_PORT"],
-            path=f"/{values['DEFAULT_DATABASE_DB']}",
-        )
-
     @validator("TEST_SQLALCHEMY_DATABASE_URI")
     def _assemble_test_db_connection(cls, v: str, values: dict[str, str]) -> str:
         return AnyUrl.build(
@@ -102,15 +84,15 @@ class Settings(BaseSettings):
             path=f"/{values['TEST_DATABASE_DB']}",
         )
 
-    @validator("INTERVIEW_SQLALCHEMY_DATABASE_URI")
-    def _assemble_interview_db_connection(cls, v: str, values: dict[str, str]) -> str:
+    @validator("DEV_SQLALCHEMY_DATABASE_URI")
+    def _assemble_dev_db_connection(cls, v: str, values: dict[str, str]) -> str:
         return AnyUrl.build(
             scheme="postgresql+asyncpg",
-            user=values.get("INTERVIEW_DATABASE_USER", ""),
-            password=values.get("INTERVIEW_DATABASE_PASSWORD", ""),
-            host=values.get("INTERVIEW_DATABASE_HOSTNAME",""),
-            port=values.get("INTERVIEW_DATABASE_PORT", ""),
-            path=f'/{values.get("INTERVIEW_DATABASE_DB","")}',
+            user=values.get("DEV_DATABASE_USER", ""),
+            password=values.get("DEV_DATABASE_PASSWORD", ""),
+            host=values.get("DEV_DATABASE_HOSTNAME",""),
+            port=values.get("DEV_DATABASE_PORT", ""),
+            path=f'/{values.get("DEV_DATABASE_DB","")}',
         )
 
 
