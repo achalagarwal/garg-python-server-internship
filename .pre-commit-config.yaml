@@ -1,0 +1,36 @@
+fail_fast: true
+repos:
+  - repo: local
+    hooks:
+      - id: push-check
+        name: controlled-branch
+        language: script
+        entry: ./controlled-branch-push.sh
+        require_serial: true
+      - id: isort
+        name: isort
+        language: system
+        types: [python]
+        entry: poetry run isort
+      # Reactive bandit
+      # - id: bandit
+      #   name: bandit
+      #   language: system
+      #   types: [python]
+      #   entry: poetry run bandit -c .bandit.yaml
+      - id: flake8
+        name: flake8
+        language: system
+        types: [python]
+        entry: poetry run flake8 --config .flake8
+      # reintroduce if there are benefits
+      # - id: pylint
+      #   name: pylint
+      #   language: system
+      #   types: [python]
+      #   entry: poetry run pylint --disable=all --enable=E0602
+      - id: black
+        name: black
+        language: system
+        types: [python]
+        entry: poetry run black

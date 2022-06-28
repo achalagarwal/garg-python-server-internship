@@ -1,11 +1,41 @@
 [flake8]
-max-line-length = 88
-select = C,E,F,W,B,B9
-ignore = E203, E501, W503
+; [flake8]
+
+; Because of black, we ignore those:
+;   E203: Whitespace before ':'
+;   E266: Too many leading ';' for block comment
+;   E303: too many blank lines
+;   E501: Line too long (82 &gt; 79 characters)
+;   W503: Line break occurred before a binary operator (W503)
+
+; Because of sqlalchemy, we ignore those ones:
+;   W601: .has_key() is deprecated, use 'in' (has_key method is used for JSONB column)
+;   E711: Comparison to none should be 'if cond is none:'
+
+; Because we don't think it brings any value or it's not clearer
+;   C401: Unnecessary generator - rewrite as a set comprehension.
+;   C402: Unnecessary generator - rewrite as a dict comprehension.
+;   C408: Unnecessary (dict/list/tuple) call - rewrite as a literal.
+;   P101: format string does contain unindexed parameters
+;   P102 docstring does contain unindexed parameters
+;   P103: other string does contain unindexed parameters
+
+; To reactivate (it's new ones)
+; * E741: Do not use variables named 'I', 'O', or 'l
+; * F821: Undefined name (typing)
+
+ignore = E203, E266, E303, E501, E711, W503, W601, C401, C402, C408, P101, P102, P103
+max-line-length = 80
+
+; Enable:
+;   * G => flake8-logging-format
+enable-extensions=G
+
 exclude = 
     __init__.py,
     .venv,
     venv,
+    env,
     __pycache__,
-    .github,
+    .git,
     .vscode,

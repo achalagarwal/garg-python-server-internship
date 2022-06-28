@@ -1,8 +1,8 @@
 from typing import Optional, Union
-from typing_extensions import Literal
-from pydantic import UUID4, EmailStr, Field, BaseModel
 
-from app.schemas import sku_variant
+from pydantic import UUID4, BaseModel
+from typing_extensions import Literal
+
 
 class WarehouseInventoryCreate(BaseModel):
     row: int
@@ -13,7 +13,8 @@ class WarehouseInventoryCreate(BaseModel):
     # but that will break the mobile app
     sku_id: Optional[UUID4]
     warehouse_id: UUID4
-    quantity: int # actual quantity in the warehouse
+    quantity: int  # actual quantity in the warehouse
+
 
 class WarehouseInventoryMove(BaseModel):
 
@@ -30,6 +31,7 @@ class WarehouseInventoryMove(BaseModel):
 
 class WarehouseInventory(WarehouseInventoryCreate):
     id: UUID4
+
 
 class WarehouseInventoryPick(BaseModel):
     row: Union[int, Literal[None]]

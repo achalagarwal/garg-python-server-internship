@@ -1,7 +1,9 @@
 from typing import List, TypeVar
+
 from sqlalchemy.ext.mutable import Mutable
 
 T = TypeVar("T")
+
 
 def index_with_default(list_data: List[T], item: T, default=None):
     try:
@@ -9,7 +11,6 @@ def index_with_default(list_data: List[T], item: T, default=None):
         return index
     except ValueError:
         return default
-
 
 
 class MutableList(Mutable, list):
