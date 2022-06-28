@@ -165,6 +165,8 @@ async def post_invoice(
             if quantity_remaining > 0:
                 quantity_in_inventory = warehouse_inventory.projected_quantities[index]
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
+                if take_from_inventory == 0:
+                    continue
                 new_projected_quantities = list(warehouse_inventory.projected_quantities)
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
@@ -215,6 +217,8 @@ async def post_invoice(
                     break
                 quantity_in_inventory = warehouse_inventory.projected_quantities[index]
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
+                if take_from_inventory == 0:
+                    continue
                 new_projected_quantities = list(warehouse_inventory.projected_quantities)
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
