@@ -45,7 +45,6 @@ class Settings(BaseSettings):
     # FILE STORE PATH
     FILE_STORE: Optional[str]
 
-
     # POSTGRESQL TEST DATABASE
     TEST_DATABASE_HOSTNAME: str
     TEST_DATABASE_USER: str
@@ -90,11 +89,10 @@ class Settings(BaseSettings):
             scheme="postgresql+asyncpg",
             user=values.get("DEV_DATABASE_USER", ""),
             password=values.get("DEV_DATABASE_PASSWORD", ""),
-            host=values.get("DEV_DATABASE_HOSTNAME",""),
+            host=values.get("DEV_DATABASE_HOSTNAME", ""),
             port=values.get("DEV_DATABASE_PORT", ""),
             path=f'/{values.get("DEV_DATABASE_DB","")}',
         )
-
 
     class Config:
         env_file = f"{PROJECT_DIR}/.env"

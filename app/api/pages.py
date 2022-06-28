@@ -22,14 +22,14 @@ templates = Jinja2Templates(directory="app/templates")
 page_router = APIRouter()
 
 
-# TODO:  
+# TODO:
 # Please use multipart/form-data instead of JSON
 @page_router.get("/home")
 async def home():
     return templates.TemplateResponse("image_upload.html", {"request": {}})
 
 
-# TODO:  
+# TODO:
 # Please use multipart/form-data instead of JSON
 @page_router.get("/login-page")
 async def home():

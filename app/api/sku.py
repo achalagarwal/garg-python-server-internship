@@ -1,4 +1,3 @@
-
 import uuid
 from typing import Any, List
 from uuid import UUID
@@ -26,9 +25,7 @@ client = AsyncClient(base_url="http://localhost:8000/")
 
 @sku_router.patch("/sku")
 async def patch_sku(
-    id: str,
-    sku_updates: SKUPatch,
-    session: AsyncSession = Depends(get_session)
+    id: str, sku_updates: SKUPatch, session: AsyncSession = Depends(get_session)
 ):
     sku_result = await session.execute(select(SKU).where(SKU.id == id))
     sku = sku_result.scalar_one()
@@ -47,10 +44,12 @@ async def post_sku(
     """
     Insert sku in db
     """
-    
+
     if sku.image is not None:
-        raise NotImplementedError("Please remove this statement after implementing this function")
-    
+        raise NotImplementedError(
+            "Please remove this statement after implementing this function"
+        )
+
     sku_dict = sku.dict(skip_defaults=True)
     sku_dict["id"] = uuid.uuid4()
     sku = SKU(**sku_dict)
@@ -63,6 +62,7 @@ async def get_sku(session: AsyncSession = Depends(get_session)):
     skus_result = await session.execute(select(SKU).where(SKU.disabled == None))
     skus = skus_result.scalars().all()
     return skus
+
 
 @sku_router.get("/api/sku", response_model=SKUGetResponse)
 async def get_skus(session: AsyncSession = Depends(get_session)):
@@ -78,11 +78,13 @@ async def get_skus(session: AsyncSession = Depends(get_session)):
 @sku_router.post("/sku/projected_match")
 async def initialize_sku_projected_quantities(
     skuProjectionRequest: SKUProjectedRequest,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
 
     sku_id = skuProjectionRequest.sku_id
-    sku_result = await session.execute(select(SKU).options(joinedload(SKU.sku_variants)).where(SKU.id == sku_id))
+    sku_result = await session.execute(
+        select(SKU).options(joinedload(SKU.sku_variants)).where(SKU.id == sku_id)
+    )
     sku = sku_result.unique().scalar_one()
 
     sku_variant_ids = list(map(lambda sku_variant: sku_variant.id, sku.sku_variants))
@@ -90,9 +92,11 @@ async def initialize_sku_projected_quantities(
     sku_variant_id_set = set(sku_variant_ids)
 
     # TODO: Filter by Warehouse ID
-    inventories_result = await session.execute(select(WarehouseInventory).where(
-        WarehouseInventory.sku_variants.op('&&')(sku_variant_ids)
-    ))
+    inventories_result = await session.execute(
+        select(WarehouseInventory).where(
+            WarehouseInventory.sku_variants.op("&&")(sku_variant_ids)
+        )
+    )
 
     inventories = inventories_result.scalars().all()
 
@@ -103,7 +107,7 @@ async def initialize_sku_projected_quantities(
             if inventory_sku_variant_id in sku_variant_id_set:
                 projected_quantities[i] = inventory.quantities[i]
         inventory.projected_quantities = projected_quantities
-    
+
     await session.commit()
 
     return
@@ -114,18 +118,23 @@ async def search_sku(
     search: str,
     company: str,
     limit: int = 10,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
 
     # we might not need to complicate this function
     # once we have an index on the "title"
-    skus_result = await session.execute(select(SKU).where(SKU.company == company, SKU.disabled == None))
+    skus_result = await session.execute(
+        select(SKU).where(SKU.company == company, SKU.disabled == None)
+    )
     skus = skus_result.scalars().all()
     # skus = session.execute(select(SKU)).filter(
     #         SKU.company == company,
     #     ).with_entities(SKU.title, SKU.id)
     title_mapping = {sku.title: sku for sku in skus}
-    matched_sku_titles = map(lambda match: match[0], process.extract(search, map(lambda sku: sku.title, skus), limit=limit))
+    matched_sku_titles = map(
+        lambda match: match[0],
+        process.extract(search, map(lambda sku: sku.title, skus), limit=limit),
+    )
     matched_skus = [title_mapping[sku_title] for sku_title in matched_sku_titles]
 
     return matched_skus

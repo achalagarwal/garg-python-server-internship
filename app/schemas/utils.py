@@ -10,7 +10,7 @@ class LocalDataTimestamps(BaseModel):
     invoice: Union[datetime, Literal[None]]
     sku: Union[datetime, Literal[None]]
 
+
 class DatabaseHasUpdates(BaseModel):
     invoice: bool
     sku: bool
-

@@ -15,7 +15,8 @@ class WarehouseInventoryCreate(BaseModel):
     # but that will break the mobile app
     sku_id: Optional[UUID4]
     warehouse_id: UUID4
-    quantity: int # actual quantity in the warehouse
+    quantity: int  # actual quantity in the warehouse
+
 
 class WarehouseInventoryMove(BaseModel):
 
@@ -32,6 +33,7 @@ class WarehouseInventoryMove(BaseModel):
 
 class WarehouseInventory(WarehouseInventoryCreate):
     id: UUID4
+
 
 class WarehouseInventoryPick(BaseModel):
     row: Union[int, Literal[None]]

@@ -19,8 +19,9 @@ from app.session import async_session
 
 get_password_hash = PasswordHelper().hash
 
+
 async def main() -> None:
-    
+
     print("Start initial data")
     async with async_session() as session:
         result = await session.execute(

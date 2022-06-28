@@ -4,13 +4,13 @@ from sqlalchemy.ext.mutable import Mutable
 
 T = TypeVar("T")
 
+
 def index_with_default(list_data: List[T], item: T, default=None):
     try:
         index = list_data.index(item)
         return index
     except ValueError:
         return default
-
 
 
 class MutableList(Mutable, list):

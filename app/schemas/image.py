@@ -7,10 +7,11 @@ from fastapi_users import models
 from pydantic import UUID4, BaseModel, EmailStr, Extra, Field
 
 
-class ImageCreate(BaseModel):    
+class ImageCreate(BaseModel):
     title: Optional[str]
-    timestamp: str 
+    timestamp: str
     data: bytes
+
 
 class Image(BaseModel):
     id: UUID4

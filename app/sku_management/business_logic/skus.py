@@ -13,9 +13,11 @@ from app.session import async_session
 
 async def ainput(string: str) -> str:
     await asyncio.get_event_loop().run_in_executor(
-            None, lambda s=string: sys.stdout.write(s+' '))
-    return await asyncio.get_event_loop().run_in_executor(
-            None, sys.stdin.readline)
+        None, lambda s=string: sys.stdout.write(s + " ")
+    )
+    return await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+
+
 # TODO: Add parameter to filter out SKUs to scan
 async def recommend_merge_skus(company: str, threshold=90):
 
@@ -30,15 +32,17 @@ async def recommend_merge_skus(company: str, threshold=90):
     )
     all_skus = all_skus.scalars().all()
     sku_id_map = {sku.id: sku for sku in all_skus}
-    groups = {i:{sku.id} for i,sku in enumerate(all_skus)} # dict with number keys
-    sku_id_to_group_map = {sku.id:i for i, sku in enumerate(all_skus)} # sku id to groups key
+    groups = {i: {sku.id} for i, sku in enumerate(all_skus)}  # dict with number keys
+    sku_id_to_group_map = {
+        sku.id: i for i, sku in enumerate(all_skus)
+    }  # sku id to groups key
     # disjoint group for each sku_id
     dissimilar_for_sku_map = {}
 
     # group_id_to_sku_set_map = {}
 
     for i, sku in enumerate(all_skus):
-        for inner_sku in all_skus[i+1:]:
+        for inner_sku in all_skus[i + 1 :]:
             if sku_id_to_group_map[inner_sku.id] == sku_id_to_group_map[sku.id]:
                 continue
             # if transient disimilar
@@ -56,36 +60,34 @@ async def recommend_merge_skus(company: str, threshold=90):
 
                 continue
 
-            if (score:= WRatio(sku.title, inner_sku.title)) > threshold:
+            if (score := WRatio(sku.title, inner_sku.title)) > threshold:
                 print(score)
-                groups[sku_id_to_group_map[sku.id]] |= groups[sku_id_to_group_map[inner_sku.id]]
+                groups[sku_id_to_group_map[sku.id]] |= groups[
+                    sku_id_to_group_map[inner_sku.id]
+                ]
                 prev_group = sku_id_to_group_map[inner_sku.id]
                 for id in groups[sku_id_to_group_map[inner_sku.id]]:
-                     sku_id_to_group_map[id] = sku_id_to_group_map[sku.id]
+                    sku_id_to_group_map[id] = sku_id_to_group_map[sku.id]
                 del groups[prev_group]
                 # sku_id_to_group_map[inner_sku.id] = sku_id_to_group_map[sku.id]
             else:
-                dissimilar_to_inner_sku = dissimilar_for_sku_map.get(inner_sku.id, set())
+                dissimilar_to_inner_sku = dissimilar_for_sku_map.get(
+                    inner_sku.id, set()
+                )
                 dissimilar_to_inner_sku.add(sku.id)
                 dissimilar_to_sku = dissimilar_for_sku_map.get(sku.id, set())
                 dissimilar_to_sku.add(inner_sku.id)
                 dissimilar_for_sku_map[inner_sku.id] = dissimilar_to_inner_sku
                 dissimilar_for_sku_map[sku.id] = dissimilar_to_sku
-    
+
     for i, group in groups.items():
         if len(group) > 1:
             print(group)
             for sku_id in group:
                 print(sku_id_map[sku_id].title)
             print("------")
-    
 
-                
-                
             # check for transient relationship
-
-
-
 
     # We need to create transient handshakes, so the total handshakes <= N(N-1)/2
 
@@ -198,8 +200,8 @@ async def merge_skus(
     except:
         print(" The SKU price unit should be same ")
         return
-    
-     # assert quantity unit is same and not None
+
+    # assert quantity unit is same and not None
     try:
         if not active_sku.quantity_unit:
             active_sku.quantity_unit = next(
