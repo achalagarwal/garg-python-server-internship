@@ -5,25 +5,24 @@ We don't want to mess up dev database.
 Put here any Pytest related code (it will be executed before `app/tests/...`)
 """
 
-import os
-
-# This will ensure using test database
-os.environ["ENVIRONMENT"] = "PYTEST"
-
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
 from fastapi_users.password import PasswordHelper
 from httpx import AsyncClient
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy import text, inspect
+
 from app.core import config
 from app.main import app
 from app.models import Base
 from app.session import async_engine, async_session
 from app.tests import utils
+
+# This will ensure using test database
+os.environ["ENVIRONMENT"] = "PYTEST"
 
 get_password_hash = PasswordHelper().hash
 
@@ -59,9 +58,9 @@ async def test_db_setup_sessionmaker():
         # TODO: Create a template database T0 which is a copy of the current database
     return async_session
 
+
 @pytest.fixture
 async def session(test_db_setup_sessionmaker) -> AsyncGenerator[AsyncSession, None]:
-
     def fn(conn):
         insp = inspect(conn)
         tables = insp.get_table_names()
@@ -69,15 +68,17 @@ async def session(test_db_setup_sessionmaker) -> AsyncGenerator[AsyncSession, No
         conn.execute(query)
         for table in tables:
             if table == "user":
-                query = text(f"DELETE FROM public.user")
-            else: 
+                query = text("DELETE FROM public.user")
+            else:
                 query = text(f"DELETE FROM {table}")
             conn.execute(query)
 
         query = text(
-            "TRUNCATE TABLE " + ",".join(
+            "TRUNCATE TABLE "
+            + ",".join(
                 ["public.user" if table == "user" else table for table in tables]
-            ) + ";"
+            )
+            + ";"
         )
         # conn.execute(query)
         query = text("SET session_replication_role = 'origin';")
@@ -100,5 +101,3 @@ async def superuser_user(session: AsyncSession):
     return await utils.create_db_user(
         superuser_user_email, superuser_user_hash, session, is_superuser=True
     )
-
-

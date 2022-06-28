@@ -6,25 +6,28 @@ from typing import List, Literal, Tuple, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from httpx import AsyncClient
-
-from app.api.deps import get_session
-from app.schemas import Invoice as InvoiceSchema, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
-from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails, Warehouse
-from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, WarehouseInvoiceResponse, WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
-from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from pydantic import UUID4
 from sqlalchemy import any_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.api.deps import get_session
 from app.models import (
     SKU,
     Invoice,
     SKUVariant,
+    Warehouse,
     WarehouseInventory,
     WarehouseInvoice,
     WarehouseInvoiceDetails,
 )
+from app.schemas import Invoice as InvoiceSchema
+from app.schemas import InvoiceCreate
+from app.schemas import WarehouseInvoice as WarehouseInvoiceSchema
+from app.schemas.invoice import Status as InvoiceStatus
+from app.schemas.invoice import WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
+from app.schemas.invoice import WarehouseInvoicePatch, WarehouseInvoiceResponse
+from app.schemas.warehouse_inventory import WarehouseInventoryPick
 from app.utils import index_with_default
 
 invoice_router = APIRouter()
@@ -61,7 +64,11 @@ async def delete_invoice(
         warehouse_invoice.status = InvoiceStatus.CANCELLED
         warehouse_inventories_to_fetch.extend(warehouse_invoice.warehouse_inventories)
 
-    warehouse_inventories_result = await session.execute(select(WarehouseInventory).where(WarehouseInventory.id.in_(warehouse_inventories_to_fetch)))
+    warehouse_inventories_result = await session.execute(
+        select(WarehouseInventory).where(
+            WarehouseInventory.id.in_(warehouse_inventories_to_fetch)
+        )
+    )
     warehouse_inventories = warehouse_inventories_result.scalars().all()
     warehouse_inventory_id_map = {
         warehouse_inventory.id: warehouse_inventory
@@ -106,7 +113,9 @@ async def delete_invoice(
                 warehouse_inventory.sku_variants = new_sku_variants
 
             else:
-                new_projected_quantities = list(warehouse_inventory.projected_quantities)
+                new_projected_quantities = list(
+                    warehouse_inventory.projected_quantities
+                )
                 new_projected_quantities[index_in_warehouse_inventory] += quantity
                 warehouse_inventory.projected_quantities = new_projected_quantities
     invoice.status = InvoiceStatus.CANCELLED
@@ -200,7 +209,9 @@ async def post_invoice(
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
                 if take_from_inventory == 0:
                     continue
-                new_projected_quantities = list(warehouse_inventory.projected_quantities)
+                new_projected_quantities = list(
+                    warehouse_inventory.projected_quantities
+                )
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
                 warehouse_inventory_picks.append(
@@ -267,7 +278,9 @@ async def post_invoice(
                 take_from_inventory = min(quantity_remaining, quantity_in_inventory)
                 if take_from_inventory == 0:
                     continue
-                new_projected_quantities = list(warehouse_inventory.projected_quantities)
+                new_projected_quantities = list(
+                    warehouse_inventory.projected_quantities
+                )
                 new_projected_quantities[index] -= take_from_inventory
                 warehouse_inventory.projected_quantities = new_projected_quantities
                 warehouse_inventory_picks.append(
