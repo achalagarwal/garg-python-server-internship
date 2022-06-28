@@ -20,7 +20,7 @@ See https://pydantic-docs.helpmanual.io/usage/settings/
 """
 
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import toml
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, validator
@@ -43,22 +43,15 @@ class Settings(BaseSettings):
     DESCRIPTION: str = PYPROJECT_CONTENT["description"]
 
     # FILE STORE PATH
-    FILE_STORE: str
+    FILE_STORE: Optional[str]
 
-    # POSTGRESQL DEFAULT DATABASE
-    DEFAULT_DATABASE_HOSTNAME: str
-    DEFAULT_DATABASE_USER: str
-    DEFAULT_DATABASE_PASSWORD: str
-    DEFAULT_DATABASE_PORT: str
-    DEFAULT_DATABASE_DB: str
-    DEFAULT_SQLALCHEMY_DATABASE_URI: str = ""
 
     # POSTGRESQL TEST DATABASE
-    TEST_DATABASE_HOSTNAME: str = "localhost"
-    TEST_DATABASE_USER: str = "test_user"
-    TEST_DATABASE_PASSWORD: str = "test_password"
-    TEST_DATABASE_PORT: str = "5432"
-    TEST_DATABASE_DB: str = "test_db"
+    TEST_DATABASE_HOSTNAME: str
+    TEST_DATABASE_USER: str
+    TEST_DATABASE_PASSWORD: str
+    TEST_DATABASE_PORT: str
+    TEST_DATABASE_DB: str
     TEST_SQLALCHEMY_DATABASE_URI: str = ""
 
     # POSTGRESQL DEV DATABASE
@@ -79,17 +72,6 @@ class Settings(BaseSettings):
         if isinstance(cors_origins, str):
             return [item.strip() for item in cors_origins.split(",")]
         return cors_origins
-
-    @validator("DEFAULT_SQLALCHEMY_DATABASE_URI")
-    def _assemble_default_db_connection(cls, v: str, values: dict[str, str]) -> str:
-        return AnyUrl.build(
-            scheme="postgresql+asyncpg",
-            user=values["DEFAULT_DATABASE_USER"],
-            password=urllib.parse.quote_plus(values["DEFAULT_DATABASE_PASSWORD"]),
-            host=values["DEFAULT_DATABASE_HOSTNAME"],
-            port=values["DEFAULT_DATABASE_PORT"],
-            path=f"/{values['DEFAULT_DATABASE_DB']}",
-        )
 
     @validator("TEST_SQLALCHEMY_DATABASE_URI")
     def _assemble_test_db_connection(cls, v: str, values: dict[str, str]) -> str:

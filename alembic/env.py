@@ -32,13 +32,11 @@ target_metadata = Base.metadata
 def get_database_uri():
     import os
 
-    if os.environ.get("ENVIRONMENT") == "PYTEST":
+    ENVIRONMENT = os.environ.get("ENVIRONMENT", "")
+
+    if "TEST" in ENVIRONMENT:
         return app_config.settings.TEST_SQLALCHEMY_DATABASE_URI
-    elif os.environ.get("ENVIRONMENT") == "INTERVIEW":
-        return app_config.settings.INTERVIEW_SQLALCHEMY_DATABASE_URI
-    elif os.environ.get("ENVIRONMENT") == "DEV":
-        return app_config.settings.DEV_SQLALCHEMY_DATABASE_URI
-    return app_config.settings.DEFAULT_SQLALCHEMY_DATABASE_URI
+    return app_config.settings.DEV_SQLALCHEMY_DATABASE_URI
 
 
 def run_migrations_offline():
