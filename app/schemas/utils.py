@@ -1,8 +1,7 @@
 from datetime import datetime
-from re import I
-from typing import Optional, Union
+from typing import Union
 
-from pydantic import UUID4, BaseModel, Extra
+from pydantic import BaseModel
 from typing_extensions import Literal
 
 

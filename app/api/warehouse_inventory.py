@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from operator import and_
 from typing import List, Optional
 from uuid import uuid4
 

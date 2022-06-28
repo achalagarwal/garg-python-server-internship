@@ -1,7 +1,7 @@
 """initial_fastapi_users_model
 
 Revision ID: 57b460a916d4
-Revises: 
+Revises:
 Create Date: 2022-01-09 19:52:37.810574
 
 """

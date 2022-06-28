@@ -1,5 +1,4 @@
 from datetime import datetime
-from re import I
 from typing import Dict, Optional
 
 from pydantic import UUID4, BaseModel, Extra

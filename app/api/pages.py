@@ -26,5 +26,5 @@ async def home():
 # TODO:
 # Please use multipart/form-data instead of JSON
 @page_router.get("/login-page")
-async def home():
+async def login():
     return templates.TemplateResponse("login.html", {"request": {}})

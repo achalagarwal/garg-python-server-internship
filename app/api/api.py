@@ -10,7 +10,6 @@ includes useful dependencies.
 
 import uuid
 from datetime import datetime
-from io import BytesIO
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
@@ -21,7 +20,7 @@ from PIL import Image as PILImage
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import fastapi_users, get_current_user, get_session
+from app.api.deps import fastapi_users, get_session
 from app.core import config, security
 from app.models import SKU, Image, Invoice, WarehouseInvoice
 from app.schemas import Image as ImageSchema
@@ -49,9 +48,6 @@ api_router.include_router(
 client = AsyncClient(base_url="http://localhost:8000/")
 
 get_password_hash = PasswordHelper().hash
-
-
-from fastapi import Request
 
 
 @api_router.post("/image", response_model=ImageSchema)
@@ -102,7 +98,7 @@ async def signup(
         await utils.create_db_user(
             email=email, hashed_password=get_password_hash(password), session=session
         )
-    except Exception as e:
+    except Exception:
         pass
 
     access_token_res = await client.post(

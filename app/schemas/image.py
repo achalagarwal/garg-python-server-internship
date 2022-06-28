@@ -1,10 +1,7 @@
-import uuid
 from datetime import datetime
-from re import I
-from typing import Optional, Union
+from typing import Optional
 
-from fastapi_users import models
-from pydantic import UUID4, BaseModel, EmailStr, Extra, Field
+from pydantic import UUID4, BaseModel, Extra
 
 
 class ImageCreate(BaseModel):

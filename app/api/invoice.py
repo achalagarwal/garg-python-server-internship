@@ -480,7 +480,7 @@ async def patch_invoice(
 
 
 @invoice_router.get("/api/warehouse_invoice", response_model=WarehouseInvoiceResponse)
-async def get_pending_invoices(
+async def get_pending_warehouse_invoices(
     warehouse_id: uuid.UUID,
     page: int = 0,
     page_size: int = 50,

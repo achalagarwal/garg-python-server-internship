@@ -19,7 +19,6 @@ to databases to avoid typo bugs.
 See https://pydantic-docs.helpmanual.io/usage/settings/
 """
 
-import urllib.parse
 from pathlib import Path
 from typing import Literal, Optional, Union
 
