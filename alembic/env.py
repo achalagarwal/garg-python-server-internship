@@ -36,6 +36,10 @@ def get_database_uri():
 
     if "TEST" in ENVIRONMENT:
         return app_config.settings.TEST_SQLALCHEMY_DATABASE_URI
+    elif "STAG" in ENVIRONMENT:
+        return app_config.settings.STAGING_SQLALCHEMY_DATABASE_URI
+    elif "PROD" in ENVIRONMENT:
+        return app_config.settings.PROD_SQLALCHEMY_DATABASE_URI
     return app_config.settings.DEV_SQLALCHEMY_DATABASE_URI
 
 

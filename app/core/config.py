@@ -32,7 +32,7 @@ PYPROJECT_CONTENT = toml.load(f"{PROJECT_DIR}/pyproject.toml")["tool"]["poetry"]
 class Settings(BaseSettings):
     # CORE SETTINGS
     SECRET_KEY: str
-    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "PRODUCTION", "DEV"]
+    ENVIRONMENT: Literal["DEV", "PYTEST", "STAGE", "STAGING", "PROD", "PRODUCTION"]
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     BACKEND_CORS_ORIGINS: Union[str, list[AnyHttpUrl]]
 
@@ -59,6 +59,20 @@ class Settings(BaseSettings):
     DEV_DATABASE_PORT: str
     DEV_DATABASE_DB: str
     DEV_SQLALCHEMY_DATABASE_URI: str = ""
+
+    STAGING_DATABASE_HOSTNAME: str
+    STAGING_DATABASE_USER: str
+    STAGING_DATABASE_PASSWORD: str
+    STAGING_DATABASE_PORT: str
+    STAGING_DATABASE_DB: str
+    STAGING_SQLALCHEMY_DATABASE_URI: str = ""
+
+    PROD_DATABASE_HOSTNAME: str
+    PROD_DATABASE_USER: str
+    PROD_DATABASE_PASSWORD: str
+    PROD_DATABASE_PORT: str
+    PROD_DATABASE_DB: str
+    PROD_SQLALCHEMY_DATABASE_URI: str = ""
 
     # FIRST SUPERUSER
     FIRST_SUPERUSER_EMAIL: EmailStr
@@ -91,6 +105,28 @@ class Settings(BaseSettings):
             host=values.get("DEV_DATABASE_HOSTNAME", ""),
             port=values.get("DEV_DATABASE_PORT", ""),
             path=f'/{values.get("DEV_DATABASE_DB","")}',
+        )
+
+    @validator("STAGING_SQLALCHEMY_DATABASE_URI")
+    def _assemble_staging_db_connection(cls, v: str, values: dict[str, str]) -> str:
+        return AnyUrl.build(
+            scheme="postgresql+asyncpg",
+            user=values.get("STAGING_DATABASE_USER", ""),
+            password=values.get("STAGING_DATABASE_PASSWORD", ""),
+            host=values.get("STAGING_DATABASE_HOSTNAME", ""),
+            port=values.get("STAGING_DATABASE_PORT", ""),
+            path=f'/{values.get("STAGING_DATABASE_DB","")}',
+        )
+
+    @validator("PROD_SQLALCHEMY_DATABASE_URI")
+    def _assemble_prod_db_connection(cls, v: str, values: dict[str, str]) -> str:
+        return AnyUrl.build(
+            scheme="postgresql+asyncpg",
+            user=values.get("PROD_DATABASE_USER", ""),
+            password=values.get("PROD_DATABASE_PASSWORD", ""),
+            host=values.get("PROD_DATABASE_HOSTNAME", ""),
+            port=values.get("PROD_DATABASE_PORT", ""),
+            path=f'/{values.get("PROD_DATABASE_DB","")}',
         )
 
     class Config:
