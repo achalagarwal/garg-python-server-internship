@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 
-from pydantic import UUID4, BaseModel, EmailStr, Extra, Field
+from pydantic import UUID4, BaseModel, Extra
 
 from app.schemas.sku import SKU
 from app.schemas.warehouse_inventory import WarehouseInventoryPick

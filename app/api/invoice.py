@@ -1,14 +1,10 @@
-import enum
 import uuid
 from collections import defaultdict
 from datetime import datetime
 from functools import cmp_to_key
-from re import sub
-from typing import Any, List, Literal, Tuple, Union
-from urllib.error import HTTPError
+from typing import List, Literal, Tuple, Union
 
-from fastapi import APIRouter, Depends, Form, HTTPException, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException
 from httpx import AsyncClient
 
 from app.api.deps import get_session
@@ -29,7 +25,6 @@ from app.models import (
     WarehouseInvoice,
     WarehouseInvoiceDetails,
 )
-
 from app.utils import index_with_default
 
 invoice_router = APIRouter()

@@ -1,22 +1,18 @@
 import uuid
-from typing import Any, List
-from uuid import UUID
+from typing import List
 
-from fastapi import APIRouter, Depends, Form, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from thefuzz import process
 
-from app.api.deps import fastapi_users, get_current_user, get_session
-from app.core import security
+from app.api.deps import get_session
 from app.models import SKU, WarehouseInventory
 from app.schemas import SKU as SKUSchema
 from app.schemas import SKUCreate, SKUInvoice, SKUPatch
 from app.schemas.sku import SKUGetResponse, SKUProjectedRequest
-from app.tests import utils
 
 sku_router = APIRouter()
 

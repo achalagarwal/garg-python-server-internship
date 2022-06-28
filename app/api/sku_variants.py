@@ -1,22 +1,15 @@
-import uuid
-from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends
 from httpx import AsyncClient
 from sqlalchemy import select
-from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession
-from thefuzz import process
 
 from app.api.deps import get_session
-from app.core import security
-from app.models import SKU, SKUVariant, WarehouseInventory
+from app.models import SKUVariant, WarehouseInventory
 from app.schemas import SKUVariant as SKUVariantSchema
 from app.schemas import SKUVariantCreate
-from app.tests import utils
 
 sku_variant_router = APIRouter()
 

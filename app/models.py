@@ -5,8 +5,6 @@ Note, imported by alembic migrations logic, see `alembic/env.py`
 """
 
 from datetime import datetime
-from multiprocessing.dummy import Array
-from re import I
 from typing import Any, cast
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
@@ -22,14 +20,11 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    delete,
-    select,
-    update,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
-from sqlalchemy.orm import relationship, scoped_session, sessionmaker
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm.decl_api import declarative_base
-from sqlalchemy.sql import func, text
+from sqlalchemy.sql import func
 
 from app.utils import MutableList
 

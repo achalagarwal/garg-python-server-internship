@@ -7,7 +7,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.orm import joinedload, load_only
 from thefuzz.fuzz import WRatio
 
-from app.models import SKU, SKUVariant, WarehouseInventory
+from app.models import SKU, SKUVariant
 from app.session import async_session
 
 
@@ -133,7 +133,7 @@ async def merge_skus(
 
     try:
         active_sku = sku_id_map[active_sku_id]
-    except:
+    except Exception:
         print(
             " You need to pass the active_sku_id in sku_ids OR active_sku_id doesn't exist"
         )
@@ -173,7 +173,7 @@ async def merge_skus(
             )
         )
         assert len(companies) <= 1
-    except:
+    except Exception:
         print(" The SKU company should be same and exist")
         return
 
@@ -197,7 +197,7 @@ async def merge_skus(
             )
         )
         assert len(price_units) <= 1
-    except:
+    except Exception:
         print(" The SKU price unit should be same ")
         return
 
@@ -215,7 +215,7 @@ async def merge_skus(
             )
         )
         assert len(quantity_units) <= 1
-    except:
+    except Exception:
         print(" The SKU quantity unit should be same and exist")
         return
 
