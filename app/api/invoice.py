@@ -1,28 +1,35 @@
 
+import enum
+import uuid
 from collections import defaultdict
 from datetime import datetime
-import enum
 from functools import cmp_to_key
 from re import sub
 from typing import Any, List, Literal, Tuple, Union
 from urllib.error import HTTPError
-import uuid
-from pydantic import UUID4
-from fastapi import APIRouter, Depends, Form, status, HTTPException
-from fastapi.responses import RedirectResponse
 
+from fastapi import APIRouter, Depends, Form, HTTPException, status
+from fastapi.responses import RedirectResponse
 from httpx import AsyncClient
 
-from app.api.deps import fastapi_users, get_session, get_current_user
-from app.schemas import Invoice as InvoiceSchema, UserDB, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
+from app.api.deps import get_session
+from app.schemas import Invoice as InvoiceSchema, InvoiceCreate, WarehouseInvoice as WarehouseInvoiceSchema
 from app.models import SKU, Invoice, SKUVariant, WarehouseInventory, WarehouseInvoice, WarehouseInvoiceDetails, Warehouse
-from app.schemas import invoice
-from app.schemas import warehouse_inventory
 from app.schemas.invoice import Status as InvoiceStatus, WarehouseInvoicePatch, WarehouseInvoiceResponse, WarehouseInvoiceDetails as WarehouseInvoiceDetailsSchema
 from app.schemas.warehouse_inventory import WarehouseInventoryPick
+from pydantic import UUID4
+from sqlalchemy import any_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func, over, any_
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
+
+from app.models import (
+    SKU,
+    Invoice,
+    SKUVariant,
+    WarehouseInventory,
+    WarehouseInvoice,
+    WarehouseInvoiceDetails,
+)
 
 from app.utils import index_with_default
 

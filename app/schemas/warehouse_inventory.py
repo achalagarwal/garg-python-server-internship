@@ -1,8 +1,10 @@
 from typing import Optional, Union
+
+from pydantic import UUID4, BaseModel, EmailStr, Field
 from typing_extensions import Literal
-from pydantic import UUID4, EmailStr, Field, BaseModel
 
 from app.schemas import sku_variant
+
 
 class WarehouseInventoryCreate(BaseModel):
     row: int

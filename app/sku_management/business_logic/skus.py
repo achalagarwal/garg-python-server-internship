@@ -1,13 +1,16 @@
-from uuid import UUID
-from typing import List
-from sqlalchemy import select, update, or_
-from sqlalchemy.orm import joinedload, load_only
-from app.models import SKU, SKUVariant, WarehouseInventory
-from app.session import async_session
-from thefuzz.fuzz import WRatio
-
 import asyncio
 import sys
+from typing import List
+from uuid import UUID
+
+from sqlalchemy import or_, select, update
+from sqlalchemy.orm import joinedload, load_only
+from thefuzz.fuzz import WRatio
+
+from app.models import SKU, SKUVariant, WarehouseInventory
+from app.session import async_session
+
+
 async def ainput(string: str) -> str:
     await asyncio.get_event_loop().run_in_executor(
             None, lambda s=string: sys.stdout.write(s+' '))

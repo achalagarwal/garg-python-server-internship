@@ -21,25 +21,30 @@ Follow the following steps
 1. Clone this repo on your local machine. Read the [how to](https://www.atlassian.com/git/tutorials/setting-up-a-repository/git-clone) if you aren't sure.
 2. Make sure `poetry` is installed. You can find the installation guide at [Poetry's webpage](https://python-poetry.org/docs/). You can use [`pip` to install poetry](https://python-poetry.org/docs/#installing-with-pip) too.
 3. Install `postgresql` CLI (https://www.postgresql.org/download/)
-4. Execute the following command in the directory
+4. ```bash
+   poetry run pre-commit install --hook-type pre-commit
+   poetry run pre-commit install --hook-type pre-push
+   ```
+5. Execute the following command in the directory
    ```bash 
    # make sure to `cd <project-directory>` before running the command
    poetry install
    psql -f init.sql
    ```
-5. Run migrations 
+6. Run migrations 
    ```bash
    poetry run alembic upgrade head
    ```
-6. Finally, start the app
+7. Finally, start the app
    ```bash 
    # in the same project-directory
    poetry run uvicorn app.main:app  --workers 1 --reload   
    ```
 
-7. Upload the data directory to Google Drive using
+8. Upload the data directory to Google Drive using
    ```bash
    gdrive sync upload --keep-remote ....../Data/Storewise 1Q8P1aoNzvMTmBDDQfndHzixGVm4IUAWt
    ```
 
+TODO: Setup ignoreRevs
 --- 

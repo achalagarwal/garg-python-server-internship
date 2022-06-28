@@ -1,14 +1,13 @@
 import pytest
-
-from app.schemas import UserDB
-from app.tests import utils
-from app.api.deps import get_user_manager, get_user_db
-
+from fastapi import Depends
 from fastapi_users.password import PasswordHelper
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
-from fastapi import Depends
-from sqlalchemy.sql import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import select
+
+from app.api.deps import get_user_db, get_user_manager
+from app.schemas import UserDB
+from app.tests import utils
 
 get_password_hash = PasswordHelper().hash
 

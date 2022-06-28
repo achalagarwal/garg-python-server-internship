@@ -1,12 +1,11 @@
+from asyncio import get_event_loop
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.asyncio import AsyncEngine
-from asyncio import get_event_loop
 
-from app.core import config as app_config
 from alembic import context
+from app.core import config as app_config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

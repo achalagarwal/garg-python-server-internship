@@ -1,26 +1,26 @@
 
-from collections import defaultdict
 import datetime
+import uuid
+from collections import defaultdict
 from operator import and_
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
-import uuid
+
 from fastapi import APIRouter, Depends, Form, status
 from fastapi.responses import RedirectResponse
-from app.schemas.warehouse_inventory import WarehouseInventoryMove
-
-from app.utils import index_with_default
 from httpx import AsyncClient
+from sqlalchemy import and_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from thefuzz import process
 
 from app.api.deps import get_session
 from app.core import security
-from app.schemas import WarehouseInventory as WarehouseInventorySchema, WarehouseInventoryCreate
-from app.tests import utils
 from app.models import SKU, SKUVariant, WarehouseInventory
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
-
-from thefuzz import process
+from app.schemas import WarehouseInventory as WarehouseInventorySchema
+from app.schemas import WarehouseInventoryCreate
+from app.schemas.warehouse_inventory import WarehouseInventoryMove
+from app.tests import utils
+from app.utils import index_with_default
 
 warehouse_inventory_router = APIRouter()
 

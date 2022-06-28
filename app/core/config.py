@@ -19,12 +19,12 @@ to databases to avoid typo bugs.
 See https://pydantic-docs.helpmanual.io/usage/settings/
 """
 
+import urllib.parse
 from pathlib import Path
 from typing import Literal, Optional, Union
 
 import toml
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, validator
-import urllib.parse
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
 PYPROJECT_CONTENT = toml.load(f"{PROJECT_DIR}/pyproject.toml")["tool"]["poetry"]

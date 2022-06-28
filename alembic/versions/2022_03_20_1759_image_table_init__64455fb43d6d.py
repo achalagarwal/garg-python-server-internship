@@ -5,9 +5,10 @@ Revises: 57b460a916d4
 Create Date: 2022-03-20 17:59:34.576038
 
 """
-from alembic import op
 import sqlalchemy as sa
 from fastapi_users_db_sqlalchemy.guid import GUID
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '64455fb43d6d'

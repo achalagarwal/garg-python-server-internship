@@ -1,11 +1,12 @@
+import uuid
 from datetime import datetime
 from re import I
-import uuid
 from typing import Dict, List, Optional, Union
-from app.schemas.image import Image, ImageCreate
 
 from fastapi_users import models
-from pydantic import UUID4, UUID1, EmailStr, Field, BaseModel, Extra
+from pydantic import UUID1, UUID4, BaseModel, EmailStr, Extra, Field
+
+from app.schemas.image import Image, ImageCreate
 
 
 class SKUProjectedRequest(BaseModel):

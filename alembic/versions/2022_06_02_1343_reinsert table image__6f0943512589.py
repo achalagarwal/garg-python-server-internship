@@ -5,10 +5,12 @@ Revises: 506f308229b7
 Create Date: 2022-06-02 13:43:17.334756
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 from fastapi_users_db_sqlalchemy import guid
+from sqlalchemy.dialects import postgresql
+
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision = '6f0943512589'
 down_revision = '506f308229b7'

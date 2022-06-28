@@ -9,13 +9,13 @@ includes useful dependencies.
 """
 
 from fastapi import APIRouter, Depends, Request
-from fastapi_users import models
 from fastapi.templating import Jinja2Templates
-
-from app.api.deps import fastapi_users, get_session, get_current_user
-from app.core import security
-from app.schemas import ImageCreate, Image
+from fastapi_users import models
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import fastapi_users, get_current_user, get_session
+from app.core import security
+from app.schemas import Image, ImageCreate
 
 templates = Jinja2Templates(directory="app/templates")
 

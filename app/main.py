@@ -2,19 +2,19 @@
 Main FastAPI app instance declaration
 """
 
-from fastapi import FastAPI, Depends, status
-from fastapi.staticfiles import StaticFiles
+from fastapi import Depends, FastAPI, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.requests import Request
 
 from app.api.api import api_router
+from app.api.invoice import invoice_router
 from app.api.pages import page_router
 from app.api.sku import sku_router
-from app.api.invoice import invoice_router
 from app.api.sku_variants import sku_variant_router
 from app.api.warehouse_inventory import warehouse_inventory_router
-from starlette.requests import Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from app.core import config
 
 app = FastAPI(
@@ -54,8 +54,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 	return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 from sqladmin import Admin, ModelAdmin
+
+from app.models import (
+    SKU,
+    Image,
+    Invoice,
+    SKUVariant,
+    UserTable,
+    WarehouseInventory,
+    WarehouseInvoice,
+)
 from app.session import async_engine
-from app.models import UserTable, SKU, SKUVariant, WarehouseInventory, WarehouseInvoice, Invoice, Image
 
 admin = Admin(app, async_engine)
 

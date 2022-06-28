@@ -1,10 +1,11 @@
-from re import I
 import uuid
+from datetime import datetime
+from re import I
 from typing import Optional, Union
 
 from fastapi_users import models
-from pydantic import UUID4, EmailStr, Field, BaseModel, Extra
-from datetime import datetime
+from pydantic import UUID4, BaseModel, EmailStr, Extra, Field
+
 
 class ImageCreate(BaseModel):    
     title: Optional[str]

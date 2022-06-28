@@ -1,4 +1,5 @@
 from typing import List, TypeVar
+
 from sqlalchemy.ext.mutable import Mutable
 
 T = TypeVar("T")

@@ -6,13 +6,14 @@ Create Date: 2022-06-05 17:53:27.226555
 
 """
 from typing import List
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.orm.session import Session
-from sqlalchemy.orm import load_only
-from sqlalchemy.dialects import postgresql
-from app.models import WarehouseInventory
 
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import load_only
+from sqlalchemy.orm.session import Session
+
+from alembic import op
+from app.models import WarehouseInventory
 
 # revision identifiers, used by Alembic.
 revision = 'e0b8061d03b8'

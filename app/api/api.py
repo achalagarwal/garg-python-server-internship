@@ -8,24 +8,26 @@ fastapi_users in defined in deps, because it also
 includes useful dependencies.
 """
 
+import uuid
 from datetime import datetime
 from io import BytesIO
 from typing import Any
-import uuid
-from fastapi import APIRouter, Depends, Form, status, File, UploadFile
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.responses import RedirectResponse
 from fastapi_users.password import PasswordHelper
-
 from httpx import AsyncClient
-from app.models import SKU, Image, Invoice, WarehouseInvoice
-from app.api.deps import fastapi_users, get_session, get_current_user
-from app.core import security, config
-from app.schemas import Image as ImageSchema, UserDB
 from PIL import Image as PILImage
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import fastapi_users, get_current_user, get_session
+from app.core import config, security
+from app.models import SKU, Image, Invoice, WarehouseInvoice
+from app.schemas import Image as ImageSchema
+from app.schemas import UserDB
 from app.schemas.utils import DatabaseHasUpdates, LocalDataTimestamps
 from app.tests import utils
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
 
 api_router = APIRouter()
 api_router.include_router(
@@ -50,6 +52,8 @@ get_password_hash = PasswordHelper().hash
 
 
 from fastapi import Request
+
+
 @api_router.post("/image", response_model=ImageSchema)
 async def post_image(
     image: UploadFile = File(default=None), 

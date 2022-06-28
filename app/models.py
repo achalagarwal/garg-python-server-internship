@@ -8,29 +8,29 @@ from datetime import datetime
 from multiprocessing.dummy import Array
 from re import I
 from typing import Any, cast
-from sqlalchemy.dialects.postgresql import UUID
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
-from sqlalchemy.orm.decl_api import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session, relationship
-from sqlalchemy.sql import func, text
-from sqlalchemy.dialects.postgresql import ARRAY
+from fastapi_users_db_sqlalchemy.guid import GUID
 from sqlalchemy import (
     Boolean,
     Column,
-    Index,
+    Date,
+    DateTime,
+    Float,
     ForeignKey,
+    Index,
     Integer,
     String,
-    DateTime,
-    Date,
     Text,
-    Float,
     delete,
     select,
     update,
 )
-from fastapi_users_db_sqlalchemy.guid import GUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.orm import relationship, scoped_session, sessionmaker
+from sqlalchemy.orm.decl_api import declarative_base
+from sqlalchemy.sql import func, text
+
 from app.utils import MutableList
 
 _Base = cast(Any, declarative_base())
