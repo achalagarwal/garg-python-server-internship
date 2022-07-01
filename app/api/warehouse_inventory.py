@@ -86,7 +86,6 @@ async def move_warehouse_inventory(
     # we raise an error for projected quantities too because
     # a negative projected quantity implies that an invoice
     # needs those items from the inventory
-
     if source_inventory.projected_quantities[sku_variant_index] < 0:
         raise Exception(
             f"Cannot move quantity (projected): {warehouse_inventory_move.quantity} from inventory"
@@ -212,6 +211,7 @@ async def post_warehouse_inventory(
                 del new_sku_variants[sku_variant_index]
                 existing_warehouse_inventory.quantities = new_quantities
                 existing_warehouse_inventory.sku_variants = new_sku_variants
+                existing_warehouse_inventory.projected_quantities = new_projected_quantities
 
             else:
                 existing_warehouse_inventory.quantities = new_quantities
