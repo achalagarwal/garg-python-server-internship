@@ -81,6 +81,7 @@ class SKU(Base):
     barcode = Column(String)
     image_id = Column(UUID(as_uuid=True), ForeignKey("image.id"))
     sku_variants = relationship("SKUVariant", back_populates="sku")
+    active_parent_sku_id = Column(UUID(as_uuid=True), ForeignKey("sku.id"))
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
