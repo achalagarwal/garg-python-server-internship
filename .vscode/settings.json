@@ -1,3 +1,5 @@
 {
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.terminal.activateEnvironment": true,
 }
