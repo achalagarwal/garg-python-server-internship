@@ -18,6 +18,11 @@ repos:
       #   language: system
       #   types: [python]
       #   entry: poetry run bandit -c .bandit.yaml
+      - id: black
+        name: black
+        language: system
+        types: [python]
+        entry: poetry run black
       - id: flake8
         name: flake8
         language: system
@@ -29,8 +34,4 @@ repos:
       #   language: system
       #   types: [python]
       #   entry: poetry run pylint --disable=all --enable=E0602
-      - id: black
-        name: black
-        language: system
-        types: [python]
-        entry: poetry run black
+
