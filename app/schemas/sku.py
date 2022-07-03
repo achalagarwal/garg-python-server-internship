@@ -50,8 +50,15 @@ class SKUInvoice(BaseModel):
     title: str
     description: Optional[str]
     quantity_unit: str
-    image_id: Optional[int]
     id: UUID4
 
     class Config:
         orm_mode = True
+
+
+class SKUInvoiceWithQuantity(BaseModel):
+    title: str
+    quantity_unit: str
+    description: Optional[str]
+    id: UUID4
+    quantity: int

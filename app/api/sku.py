@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, load_only
 from thefuzz import process
 
 from app.api.deps import get_session
@@ -120,7 +120,9 @@ async def search_sku(
     # we might not need to complicate this function
     # once we have an index on the "title"
     skus_result = await session.execute(
-        select(SKU).where(SKU.company == company, SKU.disabled == None)
+        select(SKU)
+        .options(load_only(SKU.title, SKU.quantity_unit, SKU.id, SKU.description))
+        .where(SKU.company == company, SKU.disabled == None)
     )
     skus = skus_result.scalars().all()
     # skus = session.execute(select(SKU)).filter(
