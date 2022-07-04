@@ -62,6 +62,8 @@ class SKUInvoiceWithQuantity(BaseModel):
     description: Optional[str]
     id: UUID4
     quantity: int
+
+
 class SKUMerge(BaseModel):
     sku_ids: List[UUID4]
     primary_sku_id: Optional[UUID4]
