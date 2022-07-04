@@ -19,7 +19,7 @@ from app.api.warehouse_inventory import warehouse_inventory_router
 from app.core import config
 from app.models import SKU, SKUVariant, UserTable, WarehouseInventory, WarehouseInvoice
 from app.session import async_engine
-from app.sku_management.api.api import sku_management_router
+from app.sku_management.api import sku_management_router
 
 app = FastAPI(
     title=config.settings.PROJECT_NAME,

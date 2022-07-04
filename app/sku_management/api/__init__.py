@@ -20,7 +20,9 @@ client = AsyncClient(base_url="http://localhost:8000/")
 # """
 
 
-@sku_management_router.post("/merge", response_model=Literal[None])
+@sku_management_router.post(
+    "/api/sku_management/merge_skus", response_model=Literal[None]
+)
 async def merge_skus(
     sku_merged_data: SKUMerge,
     session: AsyncSession = Depends(get_session),
@@ -99,7 +101,7 @@ async def merge_skus(
 
     # disable secondary skus
     for sku in secondary_skus:
-        sku.Disabled = True
+        sku.disabled = True
 
     # update Sku variants
     all_sku_variants: List[UUID4] = []
@@ -108,12 +110,14 @@ async def merge_skus(
 
     await session.execute(
         update(SKUVariant)
-        .where(SKUVariant.id.in_(all_sku_variants))
+        .where(SKUVariant.id.in_([sku_variant.id for sku_variant in all_sku_variants]))
         .values(parent_sku_id=primary_sku_id)
     )
     # update Skus
     await session.execute(
-        update(SKU).where(SKU.id.in_(sku_objects)).values(id=primary_sku_id)
+        update(SKU)
+        .where(SKU.id.in_([sku.id for sku in sku_objects]))
+        .values(active_parent_sku_id=primary_sku_id)
     )
     await session.commit()
     return

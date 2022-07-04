@@ -81,6 +81,8 @@ class SKU(Base):
     barcode = Column(String)
     image_id = Column(UUID(as_uuid=True), ForeignKey("image.id"))
     sku_variants = relationship("SKUVariant", back_populates="sku")
+    # TODO: Add a constraint that active_parent_sku_id is NOT NULL if sku is disabled
+    # TODO: Add a constraint preventing disabled_skus to have sku_variants
     active_parent_sku_id = Column(UUID(as_uuid=True), ForeignKey("sku.id"))
     updated_at = Column(
         DateTime(timezone=True),
