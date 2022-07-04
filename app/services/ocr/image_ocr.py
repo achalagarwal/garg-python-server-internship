@@ -355,6 +355,3 @@ def detect_quantity(title_row, item_row):
             best_distance_from_quantity = distance_from_quantity
 
     return best_number
-
-
-print(parse_raw_invoice_image("/Users/achalagarwal/Downloads/GargExport-30.06.22.jpg"))
