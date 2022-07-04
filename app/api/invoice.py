@@ -11,6 +11,7 @@ from sqlalchemy import any_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, load_only
 from sqlalchemy.sql import func
+from thefuzz import process
 
 from app.api.deps import get_session
 from app.models import (
@@ -30,6 +31,7 @@ from app.schemas.invoice import WarehouseInvoiceDetails as WarehouseInvoiceDetai
 from app.schemas.invoice import WarehouseInvoicePatch, WarehouseInvoiceResponse
 from app.schemas.sku import SKUInvoiceWithQuantity
 from app.schemas.warehouse_inventory import WarehouseInventoryPick
+from app.services.ocr.image_ocr import parse_raw_invoice_image
 from app.services.ocr.pdf_ocr import parse_raw_invoice_dataframe
 from app.utils import index_with_default
 
@@ -472,7 +474,8 @@ async def parse_invoice(
     company: str = Form(...),
     session: AsyncSession = Depends(get_session),
 ):
-    if upload.filename.rsplit(".", 1)[1] == "pdf":
+    file_extension = upload.filename.rsplit(".", 1)[1]
+    if file_extension == "pdf":
         import tabula
 
         dfs = tabula.read_pdf(upload.file, output_format="dataframe", pages="all")
@@ -525,10 +528,43 @@ async def parse_invoice(
         # create a company Model with details about company invoice parsing business logic
         return matched_skus
 
-    else:
-        # its an image
-        # use the logic that we have already built
-        pass
+    elif file_extension in {"jpg", "jpeg"}:
+        parsed_items = parse_raw_invoice_image(upload.file)
+        matched_items = []
+        skus_result = await session.execute(
+            select(SKU)
+            .options(load_only(SKU.title, SKU.quantity_unit, SKU.id, SKU.description))
+            .where(SKU.company == company, SKU.disabled == None)
+        )
+        skus = skus_result.scalars().all()
+        title_sku_map = {sku.title: sku for sku in skus}
+        titles = [sku.title for sku in skus]
+
+        # TODO: use a score filter
+        matched_items = map(
+            lambda match: (title_sku_map[match[0][0][0]], match[1])
+            if len(match[0]) > 0
+            else None,
+            [
+                (process.extract(parsed_title, titles, limit=1), q)
+                for parsed_title, q in parsed_items
+            ],
+        )
+
+        matched_skus = []
+        for matched_item in matched_items:
+            if matched_item is None:
+                continue
+            matched_skus.append(
+                SKUInvoiceWithQuantity(
+                    title=matched_item[0].title,
+                    quantity_unit=matched_item[0].quantity_unit,
+                    description=matched_item[0].description,
+                    id=matched_item[0].id,
+                    quantity=matched_item[1],
+                )
+            )
+        return matched_skus
     return []
 
 

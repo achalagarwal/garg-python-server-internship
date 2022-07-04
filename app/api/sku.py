@@ -125,9 +125,6 @@ async def search_sku(
         .where(SKU.company == company, SKU.disabled == None)
     )
     skus = skus_result.scalars().all()
-    # skus = session.execute(select(SKU)).filter(
-    #         SKU.company == company,
-    #     ).with_entities(SKU.title, SKU.id)
     title_mapping = {sku.title: sku for sku in skus}
     matched_sku_titles = map(
         lambda match: match[0],

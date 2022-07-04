@@ -204,7 +204,6 @@ sku_vocabulary = ["Keya", "Notebook", "Mom", "Shilpa"]
 regex_sku_vocabulary = re.compile("|".join(sku_vocabulary), re.IGNORECASE)
 
 
-@DeprecationWarning
 def get_potential_items(ocr_boxes: List[List[Tuple[Any]]]):
 
     # TODO: Merge

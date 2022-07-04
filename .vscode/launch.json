@@ -9,7 +9,7 @@
             "args": [
                 "app.main:app",
                 "--reload",
-                "--workers=1"
+                "--workers=1",
             ],
             "jinja": true,
             "justMyCode": true
