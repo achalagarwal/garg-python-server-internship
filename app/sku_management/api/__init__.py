@@ -1,7 +1,6 @@
-from http.client import HTTPException
 from typing import List, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from httpx import AsyncClient
 from pydantic import UUID4
 from sqlalchemy import distinct, select, update
@@ -15,7 +14,7 @@ from app.schemas.sku import SKUMerge
 sku_management_router = APIRouter()
 client = AsyncClient(base_url="http://localhost:8000/")
 
-
+# TODO: Check if company name is same for all skus
 @sku_management_router.post(
     "/api/sku_management/merge_skus", response_model=Literal[None]
 )
@@ -69,22 +68,22 @@ async def merge_skus(
     if len(active_parent_sku_list) >= 2:
         print("Multiple active parent SKU provided, cannot merge")
         raise HTTPException(
-            status_code=442,
+            status_code=422,
             detail=[{"loc": ["parent_sku_id"], "msg": "multiple parents found"}],
         )
         return
 
-    elif len(active_parent_sku_list) == 1:
-        primary_sku_id = active_parent_sku_list[0]
-
     # otherwise if this list is empty then user must have provided primary sku
     # which is taken as param in primary_sku_id (line 53)
 
-    if active_parent_sku_list[0] != primary_sku_id:
+    if len(active_parent_sku_list) == 1 and active_parent_sku_list[0] != primary_sku_id:
         raise HTTPException(
-            status_code=442,
+            status_code=422,
             detail=[{"loc": ["parent_sku_id"], "msg": "multiple parents found"}],
         )
+
+    elif len(active_parent_sku_list) == 1:
+        primary_sku_id = active_parent_sku_list[0]
 
     # """
     # so at this point we have the primary_sku_id, now we need to filter out
@@ -99,8 +98,15 @@ async def merge_skus(
             secondary_sku_id_list.append(sku_id)
             secondary_skus.append(sku_id_map[sku_id])
         else:
+            primary_sku = sku_id_map[sku_id]
             continue
 
+    # check if primary sku is disabled, if so return error
+    if primary_sku.disabled == True:
+        raise HTTPException(
+            status_code=422,
+            detail=[{"loc": ["parent_sku_id"], "msg": "multiple parents found"}],
+        )
     # disable secondary skus
     for sku in secondary_skus:
         sku.disabled = True
