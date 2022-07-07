@@ -14,7 +14,7 @@ from app.schemas.sku import SKUMerge
 sku_management_router = APIRouter()
 client = AsyncClient(base_url="http://localhost:8000/")
 
-# TODO: Check if company name is same for all skus
+
 @sku_management_router.post(
     "/api/sku_management/merge_skus", response_model=Literal[None]
 )
@@ -38,34 +38,30 @@ async def merge_skus(
                 SKU.id,
                 SKU.image_id,
                 SKU.quantity_unit,
-                SKU.quantity_unit,
                 SKU.title,
                 SKU.price_unit,
                 SKU.active_parent_sku_id,
                 SKU.disabled,
+                SKU.description,
             ),
             joinedload(SKU.sku_variants).options(load_only(SKUVariant.id)),
         )
         .where(SKU.id.in_(all_sku_ids))
     )
 
-    # make a list of skus we fetched
     sku_objects: List[SKU] = skus.unique().scalars().all()
-    # dict of sku_id : sku
+
     sku_id_map = {sku.id: sku for sku in sku_objects}
 
-    # returns the parent id of sku, distinct keyword returns only 1 parent for multiple skus with same parent
     active_parent_skus_result = await session.execute(
         select(distinct(SKU.active_parent_sku_id)).where(
             SKU.active_parent_sku_id.in_(all_sku_ids)
-        )  # check for not null
+        )
     )
 
     active_parent_sku_list: List[SKU] = active_parent_skus_result.scalars().all()
 
-    # above list must ideally return 1 active parent id, that id is taken as the primary sku id
-
-    if len(active_parent_sku_list) >= 2:
+    if len(active_parent_sku_list) > 1:
         print("Multiple active parent SKU provided, cannot merge")
         raise HTTPException(
             status_code=422,
@@ -85,12 +81,9 @@ async def merge_skus(
     elif len(active_parent_sku_list) == 1:
         primary_sku_id = active_parent_sku_list[0]
 
-    # """
     # so at this point we have the primary_sku_id, now we need to filter out
     # secondary SKU's and disable them
-    # finally we will update the SKUs and SKU Variants
-    # """
-    # get secondary skus
+
     secondary_sku_id_list = []
     secondary_skus: List[SKU] = []
     for sku_id, sku in sku_id_map.items():
@@ -101,13 +94,86 @@ async def merge_skus(
             primary_sku = sku_id_map[sku_id]
             continue
 
-    # check if primary sku is disabled, if so return error
     if primary_sku.disabled == True:
         raise HTTPException(
             status_code=422,
-            detail=[{"loc": ["parent_sku_id"], "msg": "multiple parents found"}],
+            detail=[{"loc": ["parent_sku_id"], "msg": "primary SKU is disabled"}],
         )
-    # disable secondary skus
+
+    # assert same company name
+    try:
+        companies = set(
+            map(
+                lambda sku: sku.company,
+                filter(lambda sku: sku.company is not None, sku_objects),
+            )
+        )
+        assert len(companies) < 2
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["parent_sku_id"],
+                    "msg": "SKU company should be same and exist",
+                }
+            ],
+        )
+    # assert same price unit
+    try:
+        price_units = set(
+            map(
+                lambda sku: sku.price_unit,
+                filter(lambda sku: sku.price_unit is not None, sku_objects),
+            )
+        )
+        assert len(price_units) < 2
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["parent_sku_id"],
+                    "msg": "SKU price unit should be same and exist",
+                }
+            ],
+        )
+
+    # assert same quantity unit
+    try:
+        quantity_units = set(
+            map(
+                lambda sku: sku.quantity_unit,
+                filter(lambda sku: sku.quantity_unit is not None, sku_objects),
+            )
+        )
+        assert len(quantity_units) < 2
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["parent_sku_id"],
+                    "msg": "SKU quantity unit should be same and exist",
+                }
+            ],
+        )
+
+    # primary sku contains description of all secondary sku
+
+    joined_description = "\n".join(
+        filter(lambda x: x is not None, map(lambda x: x.title, secondary_skus))
+    )
+    if primary_sku.description:
+        primary_sku.description += "\n" + joined_description
+    else:
+        primary_sku.description = "\n" + joined_description
+
+    if not primary_sku.image_id:
+        primary_sku.image_id = next(
+            filter(lambda sku: sku.image_id is not None, secondary_skus), primary_sku
+        ).image_id
+
     for sku in secondary_skus:
         sku.disabled = True
 

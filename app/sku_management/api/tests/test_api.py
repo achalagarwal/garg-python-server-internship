@@ -53,9 +53,6 @@ async def test_sku_merge_works_with_single_primary_sku(
 
     sku_ids = await create_objects_in_db(session)
 
-    # Here we call the new endpoint with 6 skus (including the primary sku id)
-    # And also the primary_sku_id
-
     response = await client.post(
         "/api/sku_management/merge_skus",
         json={
@@ -87,14 +84,12 @@ async def test_sku_merge_works_with_single_primary_sku(
     # TODO: Currently we are not updating the skus that were previously disabled, it might make sense to update them
     # TODO: make disabled a non_nullable column, default value is False
 
-    # All the assert statements
-    ## Check secondary skus have been disabled and they contain no sku_variants
     assert all(
         sku.disabled is True and len(sku.sku_variants) == 0 for sku in other_skus
     )
-    ## Check primary sku has all the previous sku_variants
+
     assert len(new_primary_sku.sku_variants) == 8
-    ## Check active parent sku id has been updated for secondary skus
+
     assert (
         len(
             list(
@@ -107,7 +102,6 @@ async def test_sku_merge_works_with_single_primary_sku(
         == 3
     )
 
-    ## Check that the endpoint does not affect an unrelated SKU
     assert unchanged_sku.disabled is None and len(unchanged_sku.sku_variants) == 2
 
 
@@ -150,10 +144,6 @@ async def test_sku_merge_fails_because_of_multiple_potential_primary_key(
         return sku_ids
 
     sku_ids = await create_objects_in_db_test(session)
-    skus_result = await session.execute(
-        select(SKU).options(load_only(SKU.disabled), joinedload(SKU.sku_variants))
-    )
-    skus: List[SKU] = skus_result.unique().scalars().all()
 
     response = await client.post(
         "/api/sku_management/merge_skus",
@@ -162,16 +152,18 @@ async def test_sku_merge_fails_because_of_multiple_potential_primary_key(
             "primary_sku_id": str(sku_ids[0]),
         },
     )
+    assert response.status_code == 422
+    await session.commit()
+    skus_result = await session.execute(
+        select(SKU).options(load_only(SKU.disabled), joinedload(SKU.sku_variants))
+    )
+    skus: List[SKU] = skus_result.unique().scalars().all()
 
-    i: int = 0
-    while i < 3:
+    for i in range(3):
         unchanged_sku_id = sku_ids[i]
         unchanged_sku = next(filter(lambda sku: sku.id == unchanged_sku_id, skus))
         assert unchanged_sku.disabled is None
         i = i + 1
-
-    # TODO: check for status code 422
-    assert response.status_code == 422
 
 
 async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disabled(
@@ -210,10 +202,6 @@ async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disab
         return sku_ids
 
     sku_ids = await create_objects_in_db(session)
-    skus_result = await session.execute(
-        select(SKU).options(load_only(SKU.disabled), joinedload(SKU.sku_variants))
-    )
-    skus: List[SKU] = skus_result.unique().scalars().all()
 
     response = await client.post(
         "/api/sku_management/merge_skus",
@@ -222,9 +210,16 @@ async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disab
             "primary_sku_id": str(sku_ids[0]),
         },
     )
+    assert response.status_code == 422
 
-    i: int = 0  # dont want to check for primary since its disabled
-    while i < 3:
+    await session.commit()
+    skus_result = await session.execute(
+        select(SKU).options(load_only(SKU.disabled), joinedload(SKU.sku_variants))
+    )
+    skus: List[SKU] = skus_result.unique().scalars().all()
+
+    # dont want to check for primary since its disabled
+    for i in range(3):
         unchanged_sku_id = sku_ids[i]
         unchanged_sku = next(filter(lambda sku: sku.id == unchanged_sku_id, skus))
         if i == 0:
@@ -232,5 +227,3 @@ async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disab
         else:
             assert unchanged_sku.disabled is None
         i = i + 1
-
-    assert response.status_code == 422
