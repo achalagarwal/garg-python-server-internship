@@ -163,7 +163,6 @@ async def test_sku_merge_fails_because_of_multiple_potential_primary_key(
         unchanged_sku_id = sku_ids[i]
         unchanged_sku = next(filter(lambda sku: sku.id == unchanged_sku_id, skus))
         assert unchanged_sku.disabled is None
-        i = i + 1
 
 
 async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disabled(
@@ -226,4 +225,3 @@ async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disab
             assert unchanged_sku.disabled is True
         else:
             assert unchanged_sku.disabled is None
-        i = i + 1
