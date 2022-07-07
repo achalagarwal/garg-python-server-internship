@@ -84,15 +84,14 @@ async def merge_skus(
     # so at this point we have the primary_sku_id, now we need to filter out
     # secondary SKU's and disable them
 
-    secondary_sku_id_list = []
-    secondary_skus: List[SKU] = []
-    for sku_id, sku in sku_id_map.items():
-        if sku_id != primary_sku_id:
-            secondary_sku_id_list.append(sku_id)
-            secondary_skus.append(sku_id_map[sku_id])
-        else:
-            primary_sku = sku_id_map[sku_id]
-            continue
+    secondary_skus = list(
+        map(
+            lambda id: sku_id_map[id],
+            filter(lambda id: id != primary_sku_id, sku_id_map.keys()),
+        )
+    )
+
+    primary_sku = sku_id_map[primary_sku_id]
 
     if primary_sku.disabled == True:
         raise HTTPException(
@@ -100,7 +99,6 @@ async def merge_skus(
             detail=[{"loc": ["parent_sku_id"], "msg": "primary SKU is disabled"}],
         )
 
-    # assert same company name
     try:
         companies = set(
             map(
@@ -119,7 +117,7 @@ async def merge_skus(
                 }
             ],
         )
-    # assert same price unit
+
     try:
         price_units = set(
             map(
@@ -139,7 +137,6 @@ async def merge_skus(
             ],
         )
 
-    # assert same quantity unit
     try:
         quantity_units = set(
             map(
@@ -158,8 +155,6 @@ async def merge_skus(
                 }
             ],
         )
-
-    # primary sku contains description of all secondary sku
 
     joined_description = "\n".join(
         filter(lambda x: x is not None, map(lambda x: x.title, secondary_skus))
