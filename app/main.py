@@ -19,6 +19,7 @@ from app.api.warehouse_inventory import warehouse_inventory_router
 from app.core import config
 from app.models import SKU, SKUVariant, UserTable, WarehouseInventory, WarehouseInvoice
 from app.session import async_engine
+from app.sku_management.api import sku_management_router
 
 app = FastAPI(
     title=config.settings.PROJECT_NAME,
@@ -48,6 +49,7 @@ app.include_router(page_router)
 app.include_router(sku_router)
 app.include_router(invoice_router)
 app.include_router(sku_variant_router)
+app.include_router(sku_management_router)
 app.include_router(
     warehouse_inventory_router, dependencies=[Depends(console_log_request_json)]
 )
