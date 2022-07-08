@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, load_only
 
-from app.models import SKU, SKUVariant
+from app.models import SKU, Image, SKUVariant
 
 pytestmark = pytest.mark.asyncio
 
@@ -111,8 +111,6 @@ async def test_sku_merge_fails_because_of_multiple_potential_primary_key(
     async def create_objects_in_db_test(session):
         sku_ids = []
         for i in range(3):
-            # i=1 is active parent of sku for i=2
-            # therefore i=0 is primary sku, so is i=1
             if i == 2:
                 new_sku = SKU(
                     id=uuid.uuid4(),
@@ -212,16 +210,203 @@ async def test_sku_merge_fails_because_there_exists_a_primary_sku_which_is_disab
     assert response.status_code == 422
 
     await session.commit()
-    skus_result = await session.execute(
-        select(SKU).options(load_only(SKU.disabled), joinedload(SKU.sku_variants))
-    )
-    skus: List[SKU] = skus_result.unique().scalars().all()
+    skus_result = await session.execute(select(SKU).options(load_only(SKU.disabled)))
+    skus: List[SKU] = skus_result.scalars().all()
 
-    # dont want to check for primary since its disabled
     for i in range(3):
         unchanged_sku_id = sku_ids[i]
         unchanged_sku = next(filter(lambda sku: sku.id == unchanged_sku_id, skus))
-        if i == 0:
+        if unchanged_sku_id == sku_ids[0]:
             assert unchanged_sku.disabled is True
         else:
             assert unchanged_sku.disabled is None
+
+
+async def test_sku_merge_fails_because_the_company_or_quantity_unit_mismatched(
+    client: AsyncClient, session: AsyncSession
+):
+    async def create_objects_in_db(session):
+        sku_ids = []
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="maggi_primary",
+            quantity_unit="units",
+            company="TestCompany",
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="maggi_secondary",
+            quantity_unit="doz",
+            company="TestCompany",
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="top_ramen",
+            quantity_unit="units",
+            company="TestRamen",
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        await session.commit()
+        return sku_ids
+
+    sku_ids = await create_objects_in_db(session)
+
+    response = await client.post(
+        "/api/sku_management/merge_skus",
+        json={
+            "sku_ids": [str(sku_ids[1])],
+            "primary_sku_id": str(sku_ids[0]),
+        },
+    )
+    assert response.status_code == 422
+
+    await session.commit()
+
+    skus_result = await session.execute(
+        select(SKU).options(load_only(SKU.disabled, SKU.active_parent_sku_id))
+    )
+    skus: List[SKU] = skus_result.scalars().all()
+
+    # dont want to check for primary since its disabled
+    for sku in skus:
+        assert sku.disabled is None
+        assert sku.active_parent_sku_id is None
+
+    response = await client.post(
+        "/api/sku_management/merge_skus",
+        json={
+            "sku_ids": [str(sku_ids[1]), str(sku_ids[0])],
+            "primary_sku_id": str(sku_ids[0]),
+        },
+    )
+
+    assert response.status_code == 422
+
+    await session.commit()
+
+    skus_result = await session.execute(
+        select(SKU).options(load_only(SKU.disabled, SKU.active_parent_sku_id))
+    )
+    skus: List[SKU] = skus_result.scalars().all()
+
+    for sku in skus:
+        assert sku.disabled is None
+        assert sku.active_parent_sku_id is None
+
+
+async def test_sku_merge_works_sets_image_id_correctly(
+    client: AsyncClient, session: AsyncSession
+):
+    async def create_objects_in_db(session):
+        sku_ids = []
+
+        image_1 = Image(id=uuid.uuid4(), title="TestImage1")
+        image_2 = Image(id=uuid.uuid4(), title="TestImage2")
+
+        session.add(image_1)
+        session.add(image_2)
+        await session.flush()
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="maggi_0",
+            quantity_unit="units",
+            company="TestCompany",
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="maggi_1",
+            quantity_unit="units",
+            company="TestCompany",
+            image_id=image_1.id,
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        new_sku = SKU(
+            id=uuid.uuid4(),
+            title="maggi_2",
+            quantity_unit="units",
+            company="TestCompany",
+            image_id=image_2.id,
+        )
+        sku_ids.append(new_sku.id)
+        session.add(new_sku)
+
+        await session.commit()
+        return sku_ids
+
+    sku_ids = await create_objects_in_db(session)
+
+    response = await client.post(
+        "/api/sku_management/merge_skus",
+        json={
+            "sku_ids": [str(sku_ids[0]), str(sku_ids[1])],
+            "primary_sku_id": str(sku_ids[0]),
+        },
+    )
+
+    assert response.status_code == 200
+
+    await session.commit()
+
+    skus_result = await session.execute(select(SKU))
+
+    skus: List[SKU] = skus_result.scalars().all()
+
+    images_result = await session.execute(select(Image))
+    images: List[Image] = images_result.scalars().all()
+
+    assert len(images) == 2
+
+    for sku in skus:
+        if sku.id == sku_ids[0]:
+            assert (
+                next(filter(lambda image: image.id == sku.image_id, images)).title
+                == "TestImage1"
+            )
+
+    response = await client.post(
+        "/api/sku_management/merge_skus",
+        json={
+            "sku_ids": [str(sku_ids[0]), str(sku_ids[2])],
+            "primary_sku_id": str(sku_ids[0]),
+        },
+    )
+
+    assert response.status_code == 200
+
+    await session.commit()
+
+    skus_result = await session.execute(select(SKU))
+
+    skus: List[SKU] = skus_result.scalars().all()
+
+    images_result = await session.execute(select(Image))
+    images: List[Image] = images_result.scalars().all()
+
+    await session.refresh(skus[0])
+    await session.refresh(skus[2])
+
+    assert len(images) == 2
+
+    for sku in skus:
+        if sku.id == sku_ids[0]:
+            assert (
+                next(filter(lambda image: image.id == sku.image_id, images)).title
+                == "TestImage1"
+            )
+        else:
+            assert sku.disabled is True
