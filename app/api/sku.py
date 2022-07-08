@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Union
 
 from fastapi import APIRouter, Depends
 from httpx import AsyncClient
@@ -11,7 +11,7 @@ from thefuzz import process
 from app.api.deps import get_session
 from app.models import SKU, WarehouseInventory
 from app.schemas import SKU as SKUSchema
-from app.schemas import SKUCreate, SKUInvoice, SKUPatch
+from app.schemas import SKUCreate, SKUPatch, SKUSearchResult
 from app.schemas.sku import SKUGetResponse, SKUProjectedRequest
 
 sku_router = APIRouter()
@@ -109,21 +109,26 @@ async def initialize_sku_projected_quantities(
     return
 
 
-@sku_router.get("/sku/search", response_model=List[SKUInvoice])
+@sku_router.get("/sku/search", response_model=List[SKUSearchResult])
 async def search_sku(
     search: str,
-    company: str,
+    company: Union[str, None] = None,
     limit: int = 10,
     session: AsyncSession = Depends(get_session),
 ):
 
-    # we might not need to complicate this function
+    # FIXME  we might not need to complicate this function
     # once we have an index on the "title"
-    skus_result = await session.execute(
-        select(SKU)
-        .options(load_only(SKU.title, SKU.quantity_unit, SKU.id, SKU.description))
-        .where(SKU.company == company, SKU.disabled == None)
+
+    sku_query = select(SKU).options(
+        load_only(SKU.title, SKU.quantity_unit, SKU.id, SKU.description)
     )
+
+    if company:
+        sku_query = sku_query.where(SKU.company == company)
+
+    skus_result = await session.execute(sku_query)
+
     skus = skus_result.scalars().all()
     title_mapping = {sku.title: sku for sku in skus}
     matched_sku_titles = map(
@@ -131,5 +136,4 @@ async def search_sku(
         process.extract(search, map(lambda sku: sku.title, skus), limit=limit),
     )
     matched_skus = [title_mapping[sku_title] for sku_title in matched_sku_titles]
-
     return matched_skus

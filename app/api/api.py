@@ -126,7 +126,6 @@ async def check_database_updates(
 ):
     # TODO: USE READ_UNCOMMITTED FOR NOLOCK MODE
     response = DatabaseHasUpdates(invoice=False, sku=False)
-
     if local_data_timestamps.invoice is None:
         response.invoice = True
 

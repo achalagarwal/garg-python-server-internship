@@ -46,7 +46,7 @@ class SKUPatch(BaseModel):
     weight: Optional[str]
 
 
-class SKUInvoice(BaseModel):
+class SKUSearchResult(BaseModel):
     title: str
     description: Optional[str]
     quantity_unit: str
